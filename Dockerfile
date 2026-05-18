@@ -11,3 +11,4 @@ COPY . .
 EXPOSE 3000
 # 6. Definiujemy komendę, która uruchomi się podczas startu kontenera
 CMD ["npm", "start"]
+#dokonaliśmy chłodnej kalkulacji
