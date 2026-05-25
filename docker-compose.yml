@@ -27,16 +27,16 @@ services:
       - postgres_db # Backend ruszy dopiero, gdy baza danych będzie gotowa
 
   # 3. Aplikacja Frontendowa
-  frontend_app:
-    build: ./frontend
-    container_name: energycity_frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend_api
+  #frontend_app:
+   # build: ./frontend
+    #container_name: energycity_frontend
+    #ports:
+    #  - "3000:3000"
+    #volumes:
+    #  - ./frontend:/app
+    #  - /app/node_modules
+    #depends_on:
+    #  - backend_api
 
 # Definicja wolumenu, dzięki któremu dane w bazie nie znikną po wyłączeniu kontenera
 volumes:
