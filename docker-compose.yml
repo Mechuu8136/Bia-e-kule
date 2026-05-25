@@ -1,24 +1,43 @@
 version: '3.8'
+
 services:
- web:
- build: .
- ports:
- - "8080:3000"
- volumes:
- - .:/app
- - /app/node_modules
- command: npm run dev
- depends_on:
- - db
- db:
- image: postgres:15-alpine
- environment:
- POSTGRES_USER: admin
- POSTGRES_PASSWORD: secretpassword
- POSTGRES_DB: lab_database
- ports:
- - "5432:5432"
- volumes:
- - pg-data:/var/lib/postgresql/data
+  # 1. Baza danych PostgreSQL
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: energycity_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: super_secret_password
+      POSTGRES_DB: energycity_metrics
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # 2. Aplikacja Backendowa
+  backend_api:
+    build: ./backend
+    container_name: energycity_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgres://admin:super_secret_password@postgres_db:5432/energycity_metrics
+      - PORT=5000
+    depends_on:
+      - postgres_db # Backend ruszy dopiero, gdy baza danych będzie gotowa
+
+  # 3. Aplikacja Frontendowa
+  frontend_app:
+    build: ./frontend
+    container_name: energycity_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend_api
+
+# Definicja wolumenu, dzięki któremu dane w bazie nie znikną po wyłączeniu kontenera
 volumes:
- pg-data:
+  pg_data:
