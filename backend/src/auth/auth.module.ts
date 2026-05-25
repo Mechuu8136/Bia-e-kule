@@ -4,21 +4,23 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { JwtAuthGuard } from './jwt-auth.guard';   // ← DODAJ
+import { RolesGuard } from './roles.guard';         // ← DODAJ
 
 @Module({
   imports: [
-    UsersModule, // importujemy, żeby mieć dostęp do UsersService
+    UsersModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET')!,
         signOptions: { expiresIn: 3600 },
-    }),
+      }),
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard, RolesGuard],  // ← DODAJ oba guardy
   controllers: [AuthController],
-  exports: [JwtModule], // eksportujemy JwtModule — przyda się w Guards (krok 3)
+  exports: [JwtModule, JwtAuthGuard, RolesGuard],      // ← EKSPORTUJ oba guardy
 })
 export class AuthModule {}
