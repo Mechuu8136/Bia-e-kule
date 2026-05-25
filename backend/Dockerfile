@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # 6. Komenda uruchamiająca aplikację w trybie deweloperskim
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start:dev"]

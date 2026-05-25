@@ -1,0 +1,14 @@
+# Zależności
+node_modules/
+
+# Pliki budowania
+dist/
+
+# Zmienne środowiskowe (WAŻNE - nigdy nie commituj haseł!)
+.env
+
+# Cache TypeScripta
+*.tsbuildinfo
+
+# Logi
+*.log

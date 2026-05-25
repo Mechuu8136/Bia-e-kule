@@ -1,0 +1,12 @@
+# Zależności
+node_modules/
+
+# Zmienne środowiskowe
+.env
+
+# Pliki buildów
+dist/
+build/
+
+# Logi
+*.log
