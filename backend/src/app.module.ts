@@ -3,9 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { BuildingsModule } from './buildings/buildings.module';
-import { AuthModule } from './auth/auth.module'; // ← DODAJ TEN IMPORT
+import { AuthModule } from './auth/auth.module';
 import { User } from './users/user.entity';
 import { Building } from './buildings/building.entity';
+import { UserBuilding } from './users/user-building.entity';
 
 @Module({
   imports: [
@@ -16,14 +17,14 @@ import { Building } from './buildings/building.entity';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
-        entities: [User, Building],
+        entities: [User, Building, UserBuilding],
         synchronize: true,
         logging: true,
       }),
     }),
     UsersModule,
     BuildingsModule,
-    AuthModule, // ← DODAJ TEN WPIS
+    AuthModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

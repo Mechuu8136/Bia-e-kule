@@ -1,14 +1,15 @@
 // backend/src/users/user.entity.ts
 
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { UserRole } from './user-role.enum';
+import { UserBuilding } from './user-building.entity';
 
-@Entity('users') // nazwa tabeli w bazie danych
+@Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid') // automatycznie generowane UUID jako klucz główny
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true }) // pole musi być unikalne (nie można mieć dwóch kont z tym samym emailem)
+  @Column({ unique: true })
   email!: string;
 
   @Column()
@@ -17,12 +18,10 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.GOSC, // domyślna rola przy tworzeniu konta
+    default: UserRole.GOSC,
   })
   role!: UserRole;
 
-  // Klucz obcy do tabeli Buildings (uzupełniany później, gdy Buildings będą gotowe)
-  // nullable: true – dla urzędnika i gościa to pole będzie NULL
-  @Column({ type: 'uuid', nullable: true })
-  assigned_building_id!: string | null;
+  @OneToMany(() => UserBuilding, (userBuilding) => userBuilding.user)
+  buildings!: UserBuilding[];
 }

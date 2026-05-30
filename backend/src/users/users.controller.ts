@@ -9,7 +9,7 @@ import { UserRole } from './user-role.enum';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @Roles(UserRole.URZEDNIK)
@@ -18,7 +18,7 @@ export class UsersController {
       dto.email,
       dto.password,
       dto.role,
-      dto.assigned_building_id,
+      dto.building_ids,
     );
   }
 }

@@ -4,5 +4,5 @@ export class CreateUserDto {
   email!: string;
   password!: string;
   role!: UserRole;
-  assigned_building_id?: string;
+  building_ids?: string[]; // Array of building IDs to assign (for DYREKTOR)
 }
