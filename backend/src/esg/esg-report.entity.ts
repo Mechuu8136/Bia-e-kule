@@ -15,24 +15,24 @@ export class EsgReport {
   id!: string;
 
   @Column('uuid', { nullable: true })
-  generated_by_id!: string;
+  generated_by_id?: string;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'generated_by_id' })
-  generated_by!: User;
+  generated_by?: User;
 
   @Column('uuid', { nullable: true })
-  building_id!: string;
+  building_id?: string;
 
   @ManyToOne(() => Building, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'building_id' })
-  building!: Building;
+  building?: Building;
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   co2_reduction_kg!: number;
 
   @Column({ nullable: true })
-  document_url!: string;
+  document_url?: string;
 
   @CreateDateColumn()
   created_at!: Date;

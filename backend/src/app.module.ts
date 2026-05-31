@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { BuildingsModule } from './buildings/buildings.module';
 import { AuthModule } from './auth/auth.module';
+import { MetersModule } from './meters/meters.module';
+import { SolarModule } from './solar/solar.module';
+import { EsgModule } from './esg/esg.module';
 import { User } from './users/user.entity';
 import { Building } from './buildings/building.entity';
 import { UserBuilding } from './users/user-building.entity';
@@ -30,6 +33,9 @@ import { EsgReport } from './esg/esg-report.entity';
     UsersModule,
     BuildingsModule,
     AuthModule,
+    MetersModule,
+    SolarModule,
+    EsgModule,
   ],
 })
 export class AppModule { }
