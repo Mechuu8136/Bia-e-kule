@@ -5,8 +5,13 @@ import { EsgReportsService } from './esg-reports.service';
 import { EsgReportsController } from './esg-reports.controller';
 import { UserBuilding } from '../users/user-building.entity';
 
+import { AuthModule } from '../auth/auth.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([EsgReport, UserBuilding])],
+  imports: [
+    TypeOrmModule.forFeature([EsgReport, UserBuilding]),
+    AuthModule
+  ],
   providers: [EsgReportsService],
   controllers: [EsgReportsController],
   exports: [EsgReportsService],
