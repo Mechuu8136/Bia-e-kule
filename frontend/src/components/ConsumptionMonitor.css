@@ -1,0 +1,142 @@
+.consumption-monitor {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+.monitor-header {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.monitor-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.monitor-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.building-selector {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.building-selector label {
+  font-weight: 600;
+  color: #333;
+}
+
+.building-selector select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.building-selector select:hover {
+  border-color: #1976d2;
+}
+
+.monitor-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.meter-section {
+  margin-bottom: 40px;
+}
+
+.meter-section h3 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #1976d2;
+}
+
+.meter-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 20px;
+}
+
+.meter-chart-wrapper {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.meter-info {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+}
+
+.meter-serial {
+  font-size: 12px;
+  color: #999;
+  font-family: monospace;
+}
+
+.error-banner {
+  background: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c62828;
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  color: #999;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .monitor-header {
+    padding: 20px;
+  }
+
+  .monitor-header h1 {
+    font-size: 24px;
+  }
+
+  .building-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .building-selector select {
+    width: 100%;
+  }
+
+  .meter-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}

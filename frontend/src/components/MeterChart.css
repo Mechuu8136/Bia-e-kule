@@ -1,0 +1,46 @@
+.meter-chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.meter-chart-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  background: #f5f5f5;
+}
+
+.btn-active {
+  background: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.meter-chart-loading {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.meter-chart-error {
+  padding: 20px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
