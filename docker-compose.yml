@@ -13,30 +13,29 @@ services:
       - "5435:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+      # 2. Aplikacja Backendowa
+      #backend_api:
+      #  build: ./backend
+      # container_name: energycity_backend
+      #ports:
+      # - "5000:5000"
+      #environment:
+      # - DATABASE_URL=postgres://admin:super_secret_password@postgres_db:5432/energycity_metrics
+      #- PORT=5000
+      #depends_on:
+      #  - postgres_db # Backend ruszy dopiero, gdy baza danych będzie gotowa
+      # 3. Aplikacja Frontendowa
+      #frontend_app:
+      # build: ./frontend
+      #container_name: energycity_frontend
+      #ports:
+      #  - "3000:3000"
+      #volumes:
+      #  - ./frontend:/app
+      #  - /app/node_modules
+      #depends_on:
+      #  - backend_api
 
-  # 2. Aplikacja Backendowa
-  backend_api:
-    build: ./backend
-    container_name: energycity_backend
-    ports:
-      - "5000:5000"
-    environment:
-      - DATABASE_URL=postgres://admin:super_secret_password@postgres_db:5432/energycity_metrics
-      - PORT=5000
-    depends_on:
-      - postgres_db # Backend ruszy dopiero, gdy baza danych będzie gotowa
-    # 3. Aplikacja Frontendowa
-    #frontend_app:
-    # build: ./frontend
-    #container_name: energycity_frontend
-    #ports:
-    #  - "3000:3000"
-    #volumes:
-    #  - ./frontend:/app
-    #  - /app/node_modules
-    #depends_on:
-    #  - backend_api
-
-    # Definicja wolumenu, dzięki któremu dane w bazie nie znikną po wyłączeniu kontenera
+      # Definicja wolumenu, dzięki któremu dane w bazie nie znikną po wyłączeniu kontenera
 volumes:
   pg_data:
