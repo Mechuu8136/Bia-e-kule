@@ -3,13 +3,14 @@
 
  tescik esss
 
-npm install -g @nestjs/cli
+terminal 1 
 
+docker-compose down
+docker-compose up -d
 cd backend
-nest new . --skip-git --package-manager npm ??
+npm run start:dev
 
-npm install @nestjs/typeorm typeorm pg @nestjs/config
-
-npm install bcrypt @nestjs/jwt @nestjs/passport passport passport-jwt
-npm install --save-dev @types/bcrypt @types/passport-jwt
+terminal 2 
+cd frontend
+npm start
 
