@@ -16,9 +16,9 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
-    if (token && role) {
+    if (token) {
       setIsLoggedIn(true);
-      setUserRole(role);
+      if (role) setUserRole(role);
     }
     setLoading(false);
   }, []);

@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { MetersModule } from './meters/meters.module';
 import { SolarModule } from './solar/solar.module';
 import { EsgModule } from './esg/esg.module';
+import { SeedModule } from './seed/seed.module';
 import { User } from './users/user.entity';
 import { Building } from './buildings/building.entity';
 import { UserBuilding } from './users/user-building.entity';
@@ -36,6 +37,7 @@ import { EsgReport } from './esg/esg-report.entity';
     MetersModule,
     SolarModule,
     EsgModule,
+    SeedModule,
   ],
 })
 export class AppModule { }
