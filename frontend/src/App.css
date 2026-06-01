@@ -6,6 +6,10 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f5f5f5;
 }
 
 * {
@@ -20,13 +24,29 @@ body,
   padding: 0;
 }
 
+/* Skip link dla dostępności (WCAG) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #1976d2;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 .navbar {
   background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 99;
 }
 
 .navbar-container {
@@ -37,6 +57,7 @@ body,
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+  min-height: 70px;
 }
 
 .navbar-title {
@@ -44,6 +65,15 @@ body,
   font-size: 24px;
   font-weight: 700;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-role {
+  font-size: 14px;
+  opacity: 0.8;
+  font-weight: 400;
 }
 
 .navbar-menu {
@@ -64,10 +94,18 @@ body,
   font-size: 14px;
   transition: all 0.3s;
   white-space: nowrap;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .nav-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 .nav-btn.active {
@@ -76,8 +114,66 @@ body,
   border-color: white;
 }
 
+.btn-logout {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
+.btn-logout:hover {
+  background: rgba(244, 67, 54, 0.5);
+}
+
 .main-content {
+  flex: 1;
   width: 100%;
+}
+
+.app-footer {
+  background: #333;
+  color: #999;
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  margin-top: auto;
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #999;
+}
+
+/* Dostępność: Focus visible */
+:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Redukcja ruchu dla użytkowników wrażliwych na animacje */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Wysoki kontrast dla dostępności */
+@media (prefers-contrast: more) {
+  .nav-btn {
+    border: 3px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .nav-btn.active {
+    border: 3px solid #1976d2;
+  }
 }
 
 @media (max-width: 768px) {
@@ -85,6 +181,8 @@ body,
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    min-height: auto;
+    padding: 15px 20px;
   }
 
   .navbar-title {

@@ -1,0 +1,276 @@
+/* WCAG 2.1 AA Dostępność */
+
+/* Kontrast 4.5:1 dla tekstu */
+body {
+  color: #333;
+  background: #fff;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+/* Minimalna wysokość przycisku 44px (WCAG) */
+button,
+a,
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Focus outline dla dostępności klawiatury */
+:focus-visible {
+  outline: 3px solid #1976d2;
+  outline-offset: 2px;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Zmienna kontrast dla trybu wysokiego kontrastu */
+@media (prefers-contrast: more) {
+  body {
+    color: #000;
+  }
+
+  button {
+    border-width: 2px;
+  }
+
+  input,
+  select,
+  textarea {
+    border-width: 2px;
+  }
+}
+
+/* Redukcja animacji dla użytkowników wrażliwych */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Obsługa trybu ciemnego */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1e1e1e;
+    color: #e0e0e0;
+  }
+
+  input,
+  select,
+  textarea {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #555;
+  }
+}
+
+/* Semantyczne elementy HTML */
+main,
+article,
+aside,
+section,
+nav,
+header,
+footer {
+  display: block;
+}
+
+/* Skip link - widoczny po focus */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #1976d2;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Responsywne teksty - minimum 16px */
+body {
+  font-size: 16px;
+}
+
+h1 {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.5;
+}
+
+/* Obsługa długiego tekstu */
+code,
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Tabela dostępna */
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+/* Link dostępny */
+a {
+  color: #1976d2;
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #7b1fa2;
+}
+
+a:focus {
+  outline: 3px solid #1976d2;
+}
+
+/* Przycisk dostępny */
+button {
+  background: #1976d2;
+  color: white;
+  border: 2px solid #1976d2;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+button:hover {
+  background: #1565c0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  background: #ccc;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Input dostępny */
+input,
+select,
+textarea {
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+input:invalid,
+textarea:invalid {
+  border-color: #f44336;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Alert dostępny */
+[role='alert'] {
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  border-left: 4px solid;
+}
+
+[role='alert']:has(.error-message),
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  border-left-color: #c62828;
+}
+
+[role='alert']:has(.success-message),
+.success-message {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-left-color: #4caf50;
+}
+
+[role='alert']:has(.warning-message),
+.warning-message {
+  background: #fff3e0;
+  color: #e65100;
+  border-left-color: #ff9800;
+}
+
+[role='alert']:has(.info-message),
+.info-message {
+  background: #e3f2fd;
+  color: #0d47a1;
+  border-left-color: #2196f3;
+}
+
+/* Loading spinner dostępny */
+.loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading::after {
+  content: attr(aria-label, 'Ładowanie');
+}
