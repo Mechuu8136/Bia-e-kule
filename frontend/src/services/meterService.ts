@@ -30,6 +30,14 @@ export interface AggregatedData {
   count: number;
 }
 
+export interface MeterStatistics {
+  totalReadings: number;
+  minValue: number;
+  maxValue: number;
+  avgValue: number;
+  latestReading: MeterReading | null;
+}
+
 export const meterService = {
   getAllMeters: () => apiClient.get<Meter[]>('/meters'),
 
@@ -55,5 +63,5 @@ export const meterService = {
     }),
 
   getMeterStatistics: (meterId: string) =>
-    apiClient.get(`/meter-readings/${meterId}/statistics`),
+    apiClient.get<MeterStatistics>(`/meter-readings/${meterId}/statistics`),
 };

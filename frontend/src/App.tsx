@@ -81,9 +81,9 @@ function App() {
       </nav>
 
       <main className="main-content" role="main">
-        {currentPage === 'consumption' && <ConsumptionMonitor />}
-        {currentPage === 'oze' && <OZEDashboard />}
-        {currentPage === 'esg' && <ESGReports />}
+        {currentPage === 'consumption' && <ConsumptionMonitor userRole={userRole} />}
+        {currentPage === 'oze' && <OZEDashboard userRole={userRole} />}
+        {currentPage === 'esg' && <ESGReports userRole={userRole} />}
       </main>
 
       <footer className="app-footer" role="contentinfo">

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -24,19 +24,37 @@ export class EsgReportsController {
   }
 
   @Get('building/:buildingId')
-  @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async findByBuilding(@Param('buildingId') buildingId: string) {
+  @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR, UserRole.MIESZKANIEC)
+  async findByBuilding(@Param('buildingId') buildingId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    const hasAccess = await this.reportsService.hasBuildingAccess(
+      buildingId,
+      user.sub,
+      user.role,
+    );
+    if (!hasAccess) {
+      throw new ForbiddenException('Brak dostępu do raportów tego budynku');
+    }
     return this.reportsService.findReportsByBuilding(buildingId);
   }
 
   @Get('building/:buildingId/statistics')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async getStatisticsByBuilding(@Param('buildingId') buildingId: string) {
+  async getStatisticsByBuilding(@Param('buildingId') buildingId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    const hasAccess = await this.reportsService.hasBuildingAccess(
+      buildingId,
+      user.sub,
+      user.role,
+    );
+    if (!hasAccess) {
+      throw new ForbiddenException('Brak dostępu do statystyk tego budynku');
+    }
     return this.reportsService.getStatisticsByBuilding(buildingId);
   }
 
   @Get('global/statistics')
-  @Roles(UserRole.URZEDNIK)
+  @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR, UserRole.MIESZKANIEC)
   async getGlobalStatistics() {
     return this.reportsService.getGlobalStatistics();
   }
@@ -45,6 +63,13 @@ export class EsgReportsController {
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR, UserRole.MIESZKANIEC)
   async findOne(@Param('reportId') reportId: string) {
     return this.reportsService.findReportById(reportId);
+  }
+
+  @Delete(':reportId')
+  @Roles(UserRole.URZEDNIK)
+  async remove(@Param('reportId') reportId: string) {
+    await this.reportsService.deleteReport(reportId);
+    return { deleted: true };
   }
 
   @Post()

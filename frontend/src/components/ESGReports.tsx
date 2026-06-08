@@ -1,26 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { esgService, EsgReport } from '../services/esgService';
+import { esgService, EsgReport, EsgStatistics } from '../services/esgService';
 import { buildingService, Building } from '../services/buildingService';
+import {
+  getAccessScopeMessage,
+  getBuildingTypeLabel,
+  getRoleLabel,
+} from '../utils/roleLabels';
+import { formatNumber } from '../utils/chartFormatters';
 import './ESGReports.css';
 
-export const ESGReports: React.FC = () => {
+interface ESGReportsProps {
+  userRole: string;
+}
+
+export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
+  const isUrzędnik = userRole === 'urzednik';
+
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [reports, setReports] = useState<EsgReport[]>([]);
   const [globalReports, setGlobalReports] = useState<EsgReport[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState<EsgStatistics | null>(null);
+  const [loadingBuildings, setLoadingBuildings] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'building' | 'global'>('building');
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    co2_reduction_kg: '',
-    document_url: '',
-  });
+  const [formData, setFormData] = useState({ co2_reduction_kg: '', document_url: '' });
 
   useEffect(() => {
     const fetchBuildings = async () => {
       try {
-        setLoading(true);
+        setLoadingBuildings(true);
+        setError(null);
         const response = await buildingService.getAllBuildings();
         setBuildings(response.data);
         if (response.data.length > 0) {
@@ -30,7 +42,7 @@ export const ESGReports: React.FC = () => {
         setError('Błąd przy ładowaniu budynków');
         console.error(err);
       } finally {
-        setLoading(false);
+        setLoadingBuildings(false);
       }
     };
 
@@ -40,14 +52,23 @@ export const ESGReports: React.FC = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        setLoading(true);
+        setLoadingReports(true);
+        setStatistics(null);
 
         if (activeTab === 'global') {
-          const response = await esgService.getGlobalReports();
-          setGlobalReports(response.data);
+          const [reportsRes, statsRes] = await Promise.all([
+            esgService.getGlobalReports(),
+            esgService.getGlobalStatistics().catch(() => null),
+          ]);
+          setGlobalReports(reportsRes.data);
+          if (statsRes) setStatistics(statsRes.data);
         } else if (selectedBuildingId) {
-          const response = await esgService.getReportsByBuilding(selectedBuildingId);
-          setReports(response.data);
+          const [reportsRes, statsRes] = await Promise.all([
+            esgService.getReportsByBuilding(selectedBuildingId),
+            esgService.getStatisticsByBuilding(selectedBuildingId).catch(() => null),
+          ]);
+          setReports(reportsRes.data);
+          if (statsRes) setStatistics(statsRes.data);
         }
 
         setError(null);
@@ -55,15 +76,34 @@ export const ESGReports: React.FC = () => {
         setError('Błąd przy ładowaniu raportów');
         console.error(err);
       } finally {
-        setLoading(false);
+        setLoadingReports(false);
       }
     };
 
     fetchReports();
   }, [selectedBuildingId, activeTab]);
 
+  const refreshReports = async () => {
+    if (activeTab === 'global') {
+      const [reportsRes, statsRes] = await Promise.all([
+        esgService.getGlobalReports(),
+        esgService.getGlobalStatistics().catch(() => null),
+      ]);
+      setGlobalReports(reportsRes.data);
+      if (statsRes) setStatistics(statsRes.data);
+    } else if (selectedBuildingId) {
+      const [reportsRes, statsRes] = await Promise.all([
+        esgService.getReportsByBuilding(selectedBuildingId),
+        esgService.getStatisticsByBuilding(selectedBuildingId).catch(() => null),
+      ]);
+      setReports(reportsRes.data);
+      if (statsRes) setStatistics(statsRes.data);
+    }
+  };
+
   const handleCreateReport = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isUrzędnik) return;
 
     try {
       await esgService.createReport(
@@ -71,36 +111,22 @@ export const ESGReports: React.FC = () => {
         parseFloat(formData.co2_reduction_kg),
         formData.document_url || undefined
       );
-
       setFormData({ co2_reduction_kg: '', document_url: '' });
       setShowForm(false);
-
-      if (activeTab === 'global') {
-        const response = await esgService.getGlobalReports();
-        setGlobalReports(response.data);
-      } else if (selectedBuildingId) {
-        const response = await esgService.getReportsByBuilding(selectedBuildingId);
-        setReports(response.data);
-      }
+      await refreshReports();
     } catch (err) {
-      setError('Błąd przy tworzeniu raportu');
+      setError('Błąd przy tworzeniu raportu — tylko urzędnik może publikować raporty');
       console.error(err);
     }
   };
 
   const handleDeleteReport = async (reportId: string) => {
+    if (!isUrzędnik) return;
     if (!window.confirm('Na pewno usunąć raport?')) return;
 
     try {
       await esgService.deleteReport(reportId);
-
-      if (activeTab === 'global') {
-        const response = await esgService.getGlobalReports();
-        setGlobalReports(response.data);
-      } else if (selectedBuildingId) {
-        const response = await esgService.getReportsByBuilding(selectedBuildingId);
-        setReports(response.data);
-      }
+      await refreshReports();
     } catch (err) {
       setError('Błąd przy usuwaniu raportu');
       console.error(err);
@@ -108,136 +134,217 @@ export const ESGReports: React.FC = () => {
   };
 
   const currentReports = activeTab === 'global' ? globalReports : reports;
-  const totalCo2 = currentReports.reduce((sum, r) => sum + Number(r.co2_reduction_kg), 0);
+  const totalCo2 = statistics?.totalCo2Reduction ??
+    currentReports.reduce((sum, r) => sum + Number(r.co2_reduction_kg), 0);
 
-  if (loading) return <div className="loading">Ładowanie...</div>;
+  const selectedBuilding = buildings.find((b) => b.id === selectedBuildingId);
+
+  const getReportScopeLabel = (report: EsgReport): string => {
+    if (!report.building_id) return 'Raport gminy';
+    const building = buildings.find((b) => b.id === report.building_id);
+    return building ? building.name : 'Raport budynku';
+  };
+
+  if (loadingBuildings) {
+    return (
+      <div className="esg-reports" role="status" aria-live="polite">
+        <div className="loading">Ładowanie raportów ESG...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="esg-reports">
-      <div className="esg-header">
-        <h1>📊 Raporty ESG - Redukcja CO2</h1>
-        <p>Monitorowanie redukcji emisji dwutlenku węgla</p>
+      <header className="esg-header">
+        <h1>📊 Raporty ESG — Redukcja CO₂</h1>
+        <p>Monitorowanie i publikacja raportów redukcji emisji dwutlenku węgla</p>
+        {userRole && (
+          <p className="esg-role-info">
+            Zalogowano jako: <strong>{getRoleLabel(userRole)}</strong>
+          </p>
+        )}
+      </header>
+
+      {error && (
+        <div className="error-banner" role="alert" aria-live="polite">
+          {error}
+        </div>
+      )}
+
+      <div className="access-scope-banner" role="status">
+        {activeTab === 'global'
+          ? 'Raporty gminy — publiczne zestawienia redukcji CO₂ dla całej gminy.'
+          : getAccessScopeMessage(userRole, buildings.length)}
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
-
-      <div className="esg-tabs">
+      <div className="esg-tabs" role="tablist" aria-label="Zakres raportów ESG">
         <button
+          type="button"
+          role="tab"
           className={`tab ${activeTab === 'building' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('building')}
+          aria-selected={activeTab === 'building'}
         >
           Budynki
         </button>
         <button
+          type="button"
+          role="tab"
           className={`tab ${activeTab === 'global' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('global')}
+          aria-selected={activeTab === 'global'}
         >
           Gmina
         </button>
       </div>
 
-      {activeTab === 'building' && (
+      {activeTab === 'building' && buildings.length > 0 && (
         <div className="building-selector">
-          <label htmlFor="building-select">Wybierz budynek:</label>
+          <label htmlFor="esg-building-select">Wybierz budynek:</label>
           <select
-            id="building-select"
+            id="esg-building-select"
             value={selectedBuildingId || ''}
             onChange={(e) => setSelectedBuildingId(e.target.value)}
           >
             {buildings.map((building) => (
               <option key={building.id} value={building.id}>
-                {building.name}
+                {building.name} — {getBuildingTypeLabel(building.type)}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      <div className="esg-summary">
-        <div className="summary-card">
-          <h3>Liczba raportów</h3>
-          <span className="summary-value">{currentReports.length}</span>
+      {activeTab === 'building' && buildings.length === 0 && (
+        <div className="no-data" role="status">
+          <p>Brak dostępnych budynków dla Twojej roli.</p>
         </div>
-        <div className="summary-card highlight">
-          <h3>Całkowita redukcja CO2</h3>
-          <span className="summary-value">{totalCo2.toFixed(2)} kg</span>
-        </div>
-      </div>
-
-      <button className="btn-create" onClick={() => setShowForm(!showForm)}>
-        {showForm ? 'Anuluj' : '+ Nowy raport'}
-      </button>
-
-      {showForm && (
-        <form className="report-form" onSubmit={handleCreateReport}>
-          <div className="form-group">
-            <label htmlFor="co2">Redukcja CO2 (kg):</label>
-            <input
-              id="co2"
-              type="number"
-              step="0.01"
-              required
-              value={formData.co2_reduction_kg}
-              onChange={(e) => setFormData({ ...formData, co2_reduction_kg: e.target.value })}
-              placeholder="Np. 1500.50"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="url">Link do dokumentu (opcjonalnie):</label>
-            <input
-              id="url"
-              type="url"
-              value={formData.document_url}
-              onChange={(e) => setFormData({ ...formData, document_url: e.target.value })}
-              placeholder="https://..."
-            />
-          </div>
-
-          <button type="submit" className="btn-submit">
-            Zapisz raport
-          </button>
-        </form>
       )}
 
-      <div className="reports-list">
-        {currentReports.length === 0 ? (
-          <div className="no-data">Brak raportów</div>
-        ) : (
-          currentReports.map((report) => (
-            <div key={report.id} className="report-card">
-              <div className="report-header">
-                <div>
-                  <h4>
-                    Redukcja CO2: <strong>{report.co2_reduction_kg} kg</strong>
-                  </h4>
-                  <p className="report-date">
-                    {new Date(report.created_at).toLocaleDateString('pl-PL', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDeleteReport(report.id)}
-                  title="Usuń raport"
-                >
-                  ✕
-                </button>
-              </div>
-              {report.document_url && (
-                <a href={report.document_url} target="_blank" rel="noopener noreferrer" className="report-link">
-                  📄 Pobierz dokument
-                </a>
-              )}
+      {(activeTab === 'global' || buildings.length > 0) && (
+        <>
+          <div className="esg-summary" aria-label="Podsumowanie raportów">
+            <div className="summary-card">
+              <span className="summary-label">Liczba raportów</span>
+              <span className="summary-value">{currentReports.length}</span>
             </div>
-          ))
-        )}
-      </div>
+            <div className="summary-card highlight">
+              <span className="summary-label">Całkowita redukcja CO₂</span>
+              <span className="summary-value">{formatNumber(totalCo2)} kg</span>
+            </div>
+            {selectedBuilding && activeTab === 'building' && (
+              <div className="summary-card">
+                <span className="summary-label">Wybrany obiekt</span>
+                <span className="summary-value summary-value-sm">{selectedBuilding.name}</span>
+              </div>
+            )}
+          </div>
+
+          {isUrzędnik && (
+            <button
+              type="button"
+              className="btn-create"
+              onClick={() => setShowForm(!showForm)}
+              aria-expanded={showForm}
+            >
+              {showForm ? 'Anuluj' : '+ Nowy raport'}
+            </button>
+          )}
+
+          {showForm && isUrzędnik && (
+            <form className="report-form" onSubmit={handleCreateReport}>
+              <p className="form-hint">
+                Tworzysz raport dla:{' '}
+                <strong>
+                  {activeTab === 'global'
+                    ? 'całej gminy'
+                    : selectedBuilding?.name ?? 'wybranego budynku'}
+                </strong>
+              </p>
+              <div className="form-group">
+                <label htmlFor="co2">Redukcja CO₂ (kg):</label>
+                <input
+                  id="co2"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={formData.co2_reduction_kg}
+                  onChange={(e) => setFormData({ ...formData, co2_reduction_kg: e.target.value })}
+                  placeholder="Np. 1500.50"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="url">Link do dokumentu PDF (opcjonalnie):</label>
+                <input
+                  id="url"
+                  type="url"
+                  value={formData.document_url}
+                  onChange={(e) => setFormData({ ...formData, document_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <button type="submit" className="btn-submit">
+                Opublikuj raport
+              </button>
+            </form>
+          )}
+
+          <div className="reports-list" role="tabpanel">
+            {loadingReports ? (
+              <div className="loading" role="status" aria-live="polite">
+                Ładowanie raportów...
+              </div>
+            ) : currentReports.length === 0 ? (
+              <div className="no-data" role="status">
+                Brak raportów w tej kategorii
+              </div>
+            ) : (
+              currentReports.map((report) => (
+                <article key={report.id} className="report-card">
+                  <div className="report-header">
+                    <div>
+                      <span className="report-scope">{getReportScopeLabel(report)}</span>
+                      <h4>
+                        Redukcja CO₂: <strong>{formatNumber(Number(report.co2_reduction_kg))} kg</strong>
+                      </h4>
+                      <p className="report-date">
+                        {new Date(report.created_at).toLocaleDateString('pl-PL', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    {isUrzędnik && (
+                      <button
+                        type="button"
+                        className="btn-delete"
+                        onClick={() => handleDeleteReport(report.id)}
+                        aria-label="Usuń raport"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {report.document_url && (
+                    <a
+                      href={report.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="report-link"
+                    >
+                      📄 Pobierz dokument raportu
+                    </a>
+                  )}
+                </article>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

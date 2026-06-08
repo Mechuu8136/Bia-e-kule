@@ -23,6 +23,15 @@ export interface AggregatedProduction {
   readingsCount: number;
 }
 
+export interface ProductionStatistics {
+  totalReadings: number;
+  totalProduction: number;
+  avgProduction: number;
+  maxProduction: number;
+  minProduction: number;
+  latestReading: SolarProduction | null;
+}
+
 export const solarService = {
   getAllPanels: () => apiClient.get<SolarPanel[]>('/solar-panels'),
 
@@ -48,5 +57,5 @@ export const solarService = {
     }),
 
   getProductionStatistics: (panelId: string) =>
-    apiClient.get(`/solar-production/${panelId}/statistics`),
+    apiClient.get<ProductionStatistics>(`/solar-production/${panelId}/statistics`),
 };

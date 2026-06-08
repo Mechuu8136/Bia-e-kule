@@ -9,11 +9,28 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
+  TooltipItem,
 } from 'chart.js';
-import { meterService, MeterType, AggregatedData } from '../services/meterService';
+import {
+  meterService,
+  MeterType,
+  AggregatedData,
+  MeterStatistics,
+} from '../services/meterService';
+import { formatChartDate, formatNumber } from '../utils/chartFormatters';
 import './MeterChart.css';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface MeterChartProps {
   meterId: string;
@@ -21,8 +38,21 @@ interface MeterChartProps {
   unit: string;
 }
 
+const METER_LABELS: Record<MeterType, string> = {
+  [MeterType.PRAD]: 'Prąd',
+  [MeterType.WODA]: 'Woda',
+  [MeterType.CIEPLO]: 'Ciepło',
+};
+
+const METER_COLORS: Record<MeterType, string> = {
+  [MeterType.PRAD]: 'rgb(255, 193, 7)',
+  [MeterType.WODA]: 'rgb(33, 150, 243)',
+  [MeterType.CIEPLO]: 'rgb(244, 67, 54)',
+};
+
 export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit }) => {
   const [data, setData] = useState<AggregatedData[]>([]);
+  const [statistics, setStatistics] = useState<MeterStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'day' | 'month'>('month');
@@ -40,19 +70,18 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
           startDate.setFullYear(endDate.getFullYear() - 1);
         }
 
-        const response = await (timeRange === 'day'
-          ? meterService.aggregateReadingsByDay(
-              meterId,
-              startDate.toISOString().split('T')[0],
-              endDate.toISOString().split('T')[0]
-            )
-          : meterService.aggregateReadingsByMonth(
-              meterId,
-              startDate.toISOString().split('T')[0],
-              endDate.toISOString().split('T')[0]
-            ));
+        const start = startDate.toISOString().split('T')[0];
+        const end = endDate.toISOString().split('T')[0];
 
-        setData(response.data);
+        const [chartResponse, statsResponse] = await Promise.all([
+          timeRange === 'day'
+            ? meterService.aggregateReadingsByDay(meterId, start, end)
+            : meterService.aggregateReadingsByMonth(meterId, start, end),
+          meterService.getMeterStatistics(meterId),
+        ]);
+
+        setData(chartResponse.data);
+        setStatistics(statsResponse.data);
         setError(null);
       } catch (err) {
         setError('Błąd przy ładowaniu danych');
@@ -65,65 +94,101 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
     fetchData();
   }, [meterId, timeRange]);
 
-  if (loading) return <div className="meter-chart-loading">Ładowanie...</div>;
-  if (error) return <div className="meter-chart-error">{error}</div>;
+  if (loading) {
+    return (
+      <div className="meter-chart-loading" role="status" aria-live="polite">
+        Ładowanie wykresu...
+      </div>
+    );
+  }
 
-  const getMeterTypeLabel = (type: MeterType): string => {
-    const labels = {
-      [MeterType.PRAD]: 'Prąd',
-      [MeterType.WODA]: 'Woda',
-      [MeterType.CIEPLO]: 'Ciepło',
-    };
-    return labels[type];
-  };
+  if (error) {
+    return (
+      <div className="meter-chart-error" role="alert">
+        {error}
+      </div>
+    );
+  }
 
-  const getChartColor = (type: MeterType): string => {
-    const colors = {
-      [MeterType.PRAD]: 'rgb(255, 193, 7)',
-      [MeterType.WODA]: 'rgb(33, 150, 243)',
-      [MeterType.CIEPLO]: 'rgb(244, 67, 54)',
-    };
-    return colors[type];
-  };
+  if (data.length === 0) {
+    return (
+      <div className="meter-chart-empty" role="status">
+        Brak odczytów w wybranym okresie
+      </div>
+    );
+  }
+
+  const color = METER_COLORS[meterType];
+  const typeLabel = METER_LABELS[meterType];
+  const rangeLabel = timeRange === 'day' ? 'ostatnie 30 dni' : 'ostatni rok';
 
   const chartData = {
-    labels: data.map((d) => d.date),
+    labels: data.map((d) => formatChartDate(d.date, timeRange)),
     datasets: [
       {
-        label: `${getMeterTypeLabel(meterType)} - Średnia (${unit})`,
+        label: `Średnie zużycie (${unit})`,
         data: data.map((d) => d.avg),
-        borderColor: getChartColor(meterType),
-        backgroundColor: getChartColor(meterType) + '20',
-        tension: 0.1,
+        borderColor: color,
+        backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.15)'),
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 6,
       },
       {
-        label: `${getMeterTypeLabel(meterType)} - Suma (${unit})`,
+        label: `Suma zużycia (${unit})`,
         data: data.map((d) => d.sum),
-        borderColor: getChartColor(meterType),
-        borderDash: [5, 5],
+        borderColor: color,
+        borderDash: [6, 4],
         backgroundColor: 'transparent',
-        tension: 0.1,
+        fill: false,
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5,
       },
     ],
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: true,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     plugins: {
       legend: {
         position: 'top' as const,
       },
       title: {
         display: true,
-        text: `${getMeterTypeLabel(meterType)} - ${timeRange === 'day' ? '30 dni' : 'Ostatni rok'}`,
+        text: `${typeLabel} — ${rangeLabel}`,
+      },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem: TooltipItem<'line'>) => {
+            const value = tooltipItem.parsed.y;
+            if (value == null) return '';
+            return `${tooltipItem.dataset.label}: ${formatNumber(value)} ${unit}`;
+          },
+        },
       },
     },
     scales: {
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 0,
+        },
+      },
       y: {
         beginAtZero: true,
         title: {
           display: true,
           text: unit,
+        },
+        ticks: {
+          callback: (value: string | number) => formatNumber(Number(value)),
         },
       },
     },
@@ -131,21 +196,49 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
 
   return (
     <div className="meter-chart-container">
-      <div className="meter-chart-controls">
+      {statistics && statistics.totalReadings > 0 && (
+        <div className="meter-stats" aria-label="Statystyki licznika">
+          <div className="stat-item">
+            <span className="stat-label">Średnia</span>
+            <span className="stat-value">{formatNumber(statistics.avgValue)} {unit}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Min</span>
+            <span className="stat-value">{formatNumber(statistics.minValue)} {unit}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Max</span>
+            <span className="stat-value">{formatNumber(statistics.maxValue)} {unit}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Odczyty</span>
+            <span className="stat-value">{statistics.totalReadings}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="meter-chart-controls" role="group" aria-label="Zakres czasu wykresu">
         <button
-          className={`btn ${timeRange === 'day' ? 'btn-active' : ''}`}
+          type="button"
+          className={`btn-range ${timeRange === 'day' ? 'btn-active' : ''}`}
           onClick={() => setTimeRange('day')}
+          aria-pressed={timeRange === 'day'}
         >
           30 dni
         </button>
         <button
-          className={`btn ${timeRange === 'month' ? 'btn-active' : ''}`}
+          type="button"
+          className={`btn-range ${timeRange === 'month' ? 'btn-active' : ''}`}
           onClick={() => setTimeRange('month')}
+          aria-pressed={timeRange === 'month'}
         >
           Rok
         </button>
       </div>
-      <Line data={chartData} options={options} />
+
+      <div role="img" aria-label={`Wykres zużycia ${typeLabel} za ${rangeLabel}`}>
+        <Line data={chartData} options={options} />
+      </div>
     </div>
   );
 };

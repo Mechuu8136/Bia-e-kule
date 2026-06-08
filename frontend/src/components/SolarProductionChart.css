@@ -1,76 +1,124 @@
 .solar-production-chart {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .solar-chart-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .stat-card {
   background: linear-gradient(135deg, #fff3cd 0%, #ffe0b2 100%);
-  padding: 15px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
 }
 
 .stat-label {
-  font-size: 12px;
+  display: block;
+  font-size: 0.7rem;
   color: #666;
   text-transform: uppercase;
-  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
 }
 
 .stat-value {
-  font-size: 18px;
+  display: block;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: #ff8f00;
+  color: #e65100;
 }
 
 .solar-chart-controls {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  margin-top: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.btn {
+.btn-range {
   padding: 8px 16px;
-  border: 1px solid #ddd;
+  min-height: 44px;
+  border: 2px solid #ddd;
   border-radius: 4px;
   background: white;
+  color: #333;
   cursor: pointer;
-  transition: all 0.3s;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.btn:hover {
-  background: #f5f5f5;
+.btn-range:hover {
+  background: #fff3e0;
+  border-color: #ff8f00;
 }
 
-.btn-active {
+.btn-range.btn-active {
   background: #ff8f00;
   color: white;
   border-color: #ff8f00;
 }
 
-.solar-chart-loading {
+.btn-range:focus-visible {
+  outline: 3px solid #ff8f00;
+  outline-offset: 2px;
+}
+
+.solar-chart-loading,
+.solar-chart-empty {
   text-align: center;
-  padding: 40px;
-  color: #999;
+  padding: 32px;
+  color: #666;
+}
+
+.solar-chart-empty {
+  background: #fafafa;
+  border-radius: 4px;
+  border: 1px dashed #ddd;
 }
 
 .solar-chart-error {
-  padding: 20px;
+  padding: 16px;
   background: #ffebee;
   color: #c62828;
   border-radius: 4px;
-  margin-bottom: 20px;
+  border-left: 4px solid #c62828;
+}
+
+@media (max-width: 320px) {
+  .solar-chart-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .btn-range {
+    flex: 1;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .stat-card {
+    background: #2a2010;
+  }
+
+  .stat-label {
+    color: #aaa;
+  }
+
+  .stat-value {
+    color: #ffb74d;
+  }
+
+  .btn-range {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #555;
+  }
+
+  .solar-chart-empty {
+    background: #1a1a1a;
+    border-color: #444;
+  }
 }

@@ -20,8 +20,9 @@ export class MetersController {
 
   @Get('building/:buildingId')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async findByBuilding(@Param('buildingId') buildingId: string) {
-    return this.metersService.findMetersByBuilding(buildingId);
+  async findByBuilding(@Param('buildingId') buildingId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    return this.metersService.findMetersByBuilding(buildingId, user.sub, user.role);
   }
 
   @Get(':meterId')

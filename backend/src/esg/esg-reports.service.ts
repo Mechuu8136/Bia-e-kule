@@ -35,6 +35,27 @@ export class EsgReportsService {
     });
   }
 
+  async hasBuildingAccess(
+    buildingId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<boolean> {
+    if (userRole === UserRole.URZEDNIK) return true;
+
+    if (userRole === UserRole.DYREKTOR) {
+      const userBuildings = await this.userBuildingsRepository.find({
+        where: { user_id: userId },
+      });
+      return userBuildings.some((ub) => ub.building_id === buildingId);
+    }
+
+    if (userRole === UserRole.MIESZKANIEC) {
+      return true;
+    }
+
+    return false;
+  }
+
   async findGlobalReports(): Promise<EsgReport[]> {
     return this.reportsRepository.find({
       where: { building_id: IsNull() },

@@ -19,8 +19,9 @@ export class SolarPanelsController {
 
   @Get('building/:buildingId')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async findByBuilding(@Param('buildingId') buildingId: string) {
-    return this.panelsService.findPanelsByBuilding(buildingId);
+  async findByBuilding(@Param('buildingId') buildingId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    return this.panelsService.findPanelsByBuilding(buildingId, user.sub, user.role);
   }
 
   @Get(':panelId')

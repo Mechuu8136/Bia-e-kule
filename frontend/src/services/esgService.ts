@@ -9,6 +9,12 @@ export interface EsgReport {
   created_at: string;
 }
 
+export interface EsgStatistics {
+  totalReports: number;
+  totalCo2Reduction: number;
+  latestReport: EsgReport | null;
+}
+
 export const esgService = {
   getAllReports: () => apiClient.get<EsgReport[]>('/esg-reports'),
 
@@ -31,22 +37,12 @@ export const esgService = {
       document_url: documentUrl,
     }),
 
-  updateReport: (
-    reportId: string,
-    co2ReductionKg?: number,
-    documentUrl?: string
-  ) =>
-    apiClient.put<EsgReport>(`/esg-reports/${reportId}`, {
-      co2_reduction_kg: co2ReductionKg,
-      document_url: documentUrl,
-    }),
-
   deleteReport: (reportId: string) =>
     apiClient.delete(`/esg-reports/${reportId}`),
 
   getStatisticsByBuilding: (buildingId: string) =>
-    apiClient.get(`/esg-reports/statistics/building/${buildingId}`),
+    apiClient.get<EsgStatistics>(`/esg-reports/building/${buildingId}/statistics`),
 
   getGlobalStatistics: () =>
-    apiClient.get(`/esg-reports/statistics/global`),
+    apiClient.get<EsgStatistics>('/esg-reports/global/statistics'),
 };

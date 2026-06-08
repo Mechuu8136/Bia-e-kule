@@ -9,11 +9,29 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
+  TooltipItem,
 } from 'chart.js';
-import { solarService, AggregatedProduction } from '../services/solarService';
+import {
+  solarService,
+  AggregatedProduction,
+  ProductionStatistics,
+} from '../services/solarService';
+import { formatChartDate, formatNumber } from '../utils/chartFormatters';
 import './SolarProductionChart.css';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+const SOLAR_COLOR = 'rgb(255, 143, 0)';
 
 interface SolarProductionChartProps {
   panelId: string;
@@ -25,6 +43,7 @@ export const SolarProductionChart: React.FC<SolarProductionChartProps> = ({
   panelCapacity,
 }) => {
   const [data, setData] = useState<AggregatedProduction[]>([]);
+  const [statistics, setStatistics] = useState<ProductionStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'day' | 'month'>('month');
@@ -42,19 +61,18 @@ export const SolarProductionChart: React.FC<SolarProductionChartProps> = ({
           startDate.setFullYear(endDate.getFullYear() - 1);
         }
 
-        const response = await (timeRange === 'day'
-          ? solarService.aggregateProductionByDay(
-              panelId,
-              startDate.toISOString().split('T')[0],
-              endDate.toISOString().split('T')[0]
-            )
-          : solarService.aggregateProductionByMonth(
-              panelId,
-              startDate.toISOString().split('T')[0],
-              endDate.toISOString().split('T')[0]
-            ));
+        const start = startDate.toISOString().split('T')[0];
+        const end = endDate.toISOString().split('T')[0];
 
-        setData(response.data);
+        const [chartResponse, statsResponse] = await Promise.all([
+          timeRange === 'day'
+            ? solarService.aggregateProductionByDay(panelId, start, end)
+            : solarService.aggregateProductionByMonth(panelId, start, end),
+          solarService.getProductionStatistics(panelId),
+        ]);
+
+        setData(chartResponse.data);
+        setStatistics(statsResponse.data);
         setError(null);
       } catch (err) {
         setError('Błąd przy ładowaniu danych produkcji');
@@ -67,88 +85,143 @@ export const SolarProductionChart: React.FC<SolarProductionChartProps> = ({
     fetchData();
   }, [panelId, timeRange]);
 
-  if (loading) return <div className="solar-chart-loading">Ładowanie...</div>;
-  if (error) return <div className="solar-chart-error">{error}</div>;
+  if (loading) {
+    return (
+      <div className="solar-chart-loading" role="status" aria-live="polite">
+        Ładowanie wykresu produkcji...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="solar-chart-error" role="alert">
+        {error}
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="solar-chart-empty" role="status">
+        Brak danych produkcji w wybranym okresie
+      </div>
+    );
+  }
+
+  const rangeLabel = timeRange === 'day' ? 'ostatnie 30 dni' : 'ostatni rok';
+  const periodTotal = data.reduce((sum, d) => sum + d.totalProduction, 0);
+  const periodAvg = data.length > 0 ? periodTotal / data.length : 0;
 
   const chartData = {
-    labels: data.map((d) => d.date),
+    labels: data.map((d) => formatChartDate(d.date, timeRange)),
     datasets: [
       {
-        label: 'Produkcja (kWh) - Średnia',
+        label: 'Średnia produkcja (kWh)',
         data: data.map((d) => d.avgProduction),
-        borderColor: 'rgb(255, 193, 7)',
-        backgroundColor: 'rgba(255, 193, 7, 0.1)',
-        tension: 0.1,
+        borderColor: SOLAR_COLOR,
+        backgroundColor: 'rgba(255, 143, 0, 0.15)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 6,
       },
       {
-        label: 'Produkcja (kWh) - Suma',
+        label: 'Suma produkcji (kWh)',
         data: data.map((d) => d.totalProduction),
-        borderColor: 'rgb(255, 193, 7)',
-        borderDash: [5, 5],
+        borderColor: SOLAR_COLOR,
+        borderDash: [6, 4],
         backgroundColor: 'transparent',
-        tension: 0.1,
+        fill: false,
+        tension: 0.2,
+        pointRadius: 2,
+        pointHoverRadius: 5,
       },
     ],
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: true,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     plugins: {
-      legend: {
-        position: 'top' as const,
-      },
+      legend: { position: 'top' as const },
       title: {
         display: true,
-        text: `Produkcja energii (${timeRange === 'day' ? '30 dni' : 'Ostatni rok'}) - Moc: ${panelCapacity} kWp`,
+        text: `Produkcja energii — ${rangeLabel} (moc: ${panelCapacity} kWp)`,
+      },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem: TooltipItem<'line'>) => {
+            const value = tooltipItem.parsed.y;
+            if (value == null) return '';
+            return `${tooltipItem.dataset.label}: ${formatNumber(value)} kWh`;
+          },
+        },
       },
     },
     scales: {
+      x: { ticks: { maxRotation: 45, minRotation: 0 } },
       y: {
         beginAtZero: true,
-        title: {
-          display: true,
-          text: 'kWh',
+        title: { display: true, text: 'kWh' },
+        ticks: {
+          callback: (value: string | number) => formatNumber(Number(value)),
         },
       },
     },
   };
 
-  const totalProduction = data.reduce((sum, d) => sum + d.totalProduction, 0);
-  const avgProduction = data.length > 0 ? data.reduce((sum, d) => sum + d.avgProduction, 0) / data.length : 0;
-
   return (
     <div className="solar-production-chart">
-      <div className="solar-chart-stats">
+      <div className="solar-chart-stats" aria-label="Statystyki produkcji">
         <div className="stat-card">
-          <span className="stat-label">Całkowita produkcja</span>
-          <span className="stat-value">{totalProduction.toFixed(2)} kWh</span>
+          <span className="stat-label">Produkcja w okresie</span>
+          <span className="stat-value">{formatNumber(periodTotal)} kWh</span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">Średnia produkcja</span>
-          <span className="stat-value">{avgProduction.toFixed(2)} kWh</span>
+          <span className="stat-label">Średnia w okresie</span>
+          <span className="stat-value">{formatNumber(periodAvg)} kWh</span>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Moc paneli</span>
-          <span className="stat-value">{panelCapacity} kWp</span>
-        </div>
+        {statistics && statistics.totalReadings > 0 && (
+          <>
+            <div className="stat-card">
+              <span className="stat-label">Suma całkowita</span>
+              <span className="stat-value">{formatNumber(statistics.totalProduction)} kWh</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-label">Rekord dzienny</span>
+              <span className="stat-value">{formatNumber(statistics.maxProduction)} kWh</span>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="solar-chart-controls">
+      <div className="solar-chart-controls" role="group" aria-label="Zakres czasu wykresu">
         <button
-          className={`btn ${timeRange === 'day' ? 'btn-active' : ''}`}
+          type="button"
+          className={`btn-range ${timeRange === 'day' ? 'btn-active' : ''}`}
           onClick={() => setTimeRange('day')}
+          aria-pressed={timeRange === 'day'}
         >
           30 dni
         </button>
         <button
-          className={`btn ${timeRange === 'month' ? 'btn-active' : ''}`}
+          type="button"
+          className={`btn-range ${timeRange === 'month' ? 'btn-active' : ''}`}
           onClick={() => setTimeRange('month')}
+          aria-pressed={timeRange === 'month'}
         >
           Rok
         </button>
       </div>
 
-      <Line data={chartData} options={options} />
+      <div role="img" aria-label={`Wykres produkcji energii za ${rangeLabel}`}>
+        <Line data={chartData} options={options} />
+      </div>
     </div>
   );
 };

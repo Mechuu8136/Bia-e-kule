@@ -27,7 +27,21 @@ export class SolarPanelsService {
     return this.panelsRepository.save(panel);
   }
 
-  async findPanelsByBuilding(buildingId: string): Promise<SolarPanel[]> {
+  async findPanelsByBuilding(
+    buildingId: string,
+    userId?: string,
+    userRole?: UserRole,
+  ): Promise<SolarPanel[]> {
+    if (userRole === UserRole.DYREKTOR && userId) {
+      const userBuildings = await this.userBuildingsRepository.find({
+        where: { user_id: userId },
+      });
+      const allowedIds = userBuildings.map((ub) => ub.building_id);
+      if (!allowedIds.includes(buildingId)) {
+        return [];
+      }
+    }
+
     return this.panelsRepository.find({
       where: { building_id: buildingId },
     });
