@@ -95,13 +95,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, asModal = false, o
 
         <p className="login-footer">
           <small>
-            Do celów testowych użyj:
-            <br />
-            Admin: admin@example.com / password
-            <br />
-            Dyrektor: dyrektor@example.com / password
-            <br />
-            Mieszkaniec: mieszkaniec@example.com / password
+            Skonfiguruj gminę przy pierwszym uruchomieniu lub zaloguj się kontem
+            administratora.
           </small>
         </p>
       </div>

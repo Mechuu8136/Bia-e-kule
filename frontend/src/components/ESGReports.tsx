@@ -26,7 +26,11 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'building' | 'global'>('building');
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ co2_reduction_kg: '', document_url: '' });
+  const [formData, setFormData] = useState({
+    co2_reduction_kg: '',
+    document_url: '',
+    is_public: true,
+  });
 
   useEffect(() => {
     const fetchBuildings = async () => {
@@ -109,13 +113,26 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
       await esgService.createReport(
         activeTab === 'building' ? selectedBuildingId : null,
         parseFloat(formData.co2_reduction_kg),
-        formData.document_url || undefined
+        formData.document_url || undefined,
+        activeTab === 'global' ? formData.is_public : false,
       );
-      setFormData({ co2_reduction_kg: '', document_url: '' });
+      setFormData({ co2_reduction_kg: '', document_url: '', is_public: true });
       setShowForm(false);
       await refreshReports();
     } catch (err) {
       setError('Błąd przy tworzeniu raportu — tylko urzędnik może publikować raporty');
+      console.error(err);
+    }
+  };
+
+  const handleTogglePublic = async (report: EsgReport) => {
+    if (!isUrzędnik || report.building_id) return;
+
+    try {
+      await esgService.updateReport(report.id, { is_public: !report.is_public });
+      await refreshReports();
+    } catch (err) {
+      setError('Błąd przy zmianie widoczności raportu');
       console.error(err);
     }
   };
@@ -173,7 +190,9 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
 
       <div className="access-scope-banner" role="status">
         {activeTab === 'global'
-          ? 'Raporty gminy — publiczne zestawienia redukcji CO₂ dla całej gminy.'
+          ? isUrzędnik
+            ? 'Raporty gminy — zaznacz „Opublikuj na panelu gościa”, aby raport był widoczny publicznie.'
+            : 'Raporty gminy opublikowane publicznie — redukcja CO₂ dla całej gminy.'
           : getAccessScopeMessage(userRole, buildings.length)}
       </div>
 
@@ -284,6 +303,21 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
                   placeholder="https://..."
                 />
               </div>
+              {activeTab === 'global' && (
+                <div className="form-group form-group-checkbox">
+                  <label htmlFor="is-public">
+                    <input
+                      id="is-public"
+                      type="checkbox"
+                      checked={formData.is_public}
+                      onChange={(e) =>
+                        setFormData({ ...formData, is_public: e.target.checked })
+                      }
+                    />
+                    Opublikuj na panelu gościa
+                  </label>
+                </div>
+              )}
               <button type="submit" className="btn-submit">
                 Opublikuj raport
               </button>
@@ -304,7 +338,16 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
                 <article key={report.id} className="report-card">
                   <div className="report-header">
                     <div>
-                      <span className="report-scope">{getReportScopeLabel(report)}</span>
+                      <div className="report-meta-row">
+                        <span className="report-scope">{getReportScopeLabel(report)}</span>
+                        {!report.building_id && (
+                          <span
+                            className={`public-badge ${report.is_public ? 'public-badge-visible' : 'public-badge-hidden'}`}
+                          >
+                            {report.is_public ? 'Publiczny' : 'Wewnętrzny'}
+                          </span>
+                        )}
+                      </div>
                       <h4>
                         Redukcja CO₂: <strong>{formatNumber(Number(report.co2_reduction_kg))} kg</strong>
                       </h4>
@@ -318,16 +361,32 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
                         })}
                       </p>
                     </div>
-                    {isUrzędnik && (
-                      <button
-                        type="button"
-                        className="btn-delete"
-                        onClick={() => handleDeleteReport(report.id)}
-                        aria-label="Usuń raport"
-                      >
-                        ✕
-                      </button>
-                    )}
+                    <div className="report-actions">
+                      {isUrzędnik && !report.building_id && (
+                        <button
+                          type="button"
+                          className="btn-toggle-public"
+                          onClick={() => handleTogglePublic(report)}
+                          aria-label={
+                            report.is_public
+                              ? 'Ukryj raport z panelu gościa'
+                              : 'Opublikuj raport na panelu gościa'
+                          }
+                        >
+                          {report.is_public ? 'Ukryj publicznie' : 'Opublikuj publicznie'}
+                        </button>
+                      )}
+                      {isUrzędnik && (
+                        <button
+                          type="button"
+                          className="btn-delete"
+                          onClick={() => handleDeleteReport(report.id)}
+                          aria-label="Usuń raport"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {report.document_url && (
                     <a

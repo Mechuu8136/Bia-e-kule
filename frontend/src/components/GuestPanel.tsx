@@ -17,6 +17,7 @@ import {
   PublicEsgReport,
   PublicEsgStatistics,
 } from '../services/publicService';
+import { municipalityService } from '../services/municipalityService';
 import { formatNumber } from '../utils/chartFormatters';
 import './GuestPanel.css';
 
@@ -47,29 +48,55 @@ export const GuestPanel: React.FC<GuestPanelProps> = ({ onLoginClick }) => {
   const [airTrend, setAirTrend] = useState<AirQualityTrendPoint[]>([]);
   const [esgReports, setEsgReports] = useState<PublicEsgReport[]>([]);
   const [esgStats, setEsgStats] = useState<PublicEsgStatistics | null>(null);
+  const [branding, setBranding] = useState({ municipality_name: '', tagline: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const [annRes, airRes, esgRes, statsRes] = await Promise.all([
-          publicService.getAnnouncements(),
+      const failures: string[] = [];
+
+      const loadSection = async <T,>(
+        request: Promise<{ data: T }>,
+        onSuccess: (data: T) => void,
+        label: string,
+      ) => {
+        try {
+          const response = await request;
+          onSuccess(response.data);
+        } catch (err) {
+          failures.push(label);
+          console.error(`Błąd ładowania: ${label}`, err);
+        }
+      };
+
+      await Promise.all([
+        loadSection(municipalityService.getPublicSettings(), (data) => {
+          setBranding({
+            municipality_name: data.municipality_name,
+            tagline: data.tagline,
+          });
+        }, 'ustawienia gminy'),
+        loadSection(publicService.getAnnouncements(), setAnnouncements, 'aktualności'),
+        loadSection(
           publicService.getAirQuality(),
-          publicService.getGlobalEsgReports(),
-          publicService.getGlobalEsgStatistics(),
-        ]);
-        setAnnouncements(annRes.data);
-        setAirCurrent(airRes.data.current);
-        setAirTrend(airRes.data.trend);
-        setEsgReports(esgRes.data);
-        setEsgStats(statsRes.data);
-      } catch (err) {
+          (data) => {
+            setAirCurrent(data.current);
+            setAirTrend(data.trend);
+          },
+          'jakość powietrza',
+        ),
+        loadSection(publicService.getGlobalEsgReports(), setEsgReports, 'raporty ESG'),
+        loadSection(publicService.getGlobalEsgStatistics(), setEsgStats, 'statystyki ESG'),
+      ]);
+
+      if (failures.length === 5) {
         setError('Nie udało się załadować danych publicznych. Sprawdź, czy backend działa.');
-        console.error(err);
-      } finally {
-        setLoading(false);
+      } else if (failures.length > 0) {
+        setError(`Częściowy błąd ładowania: ${failures.join(', ')}.`);
       }
+
+      setLoading(false);
     };
     load();
   }, []);
@@ -95,7 +122,12 @@ export const GuestPanel: React.FC<GuestPanelProps> = ({ onLoginClick }) => {
         <div className="guest-header-inner">
           <div className="guest-logo">
             <h1>EnergyCity</h1>
-            <p>Monitoring energii i jakości środowiska — Gmina Choroszcz</p>
+            <p>
+              {branding.tagline ||
+                (branding.municipality_name
+                  ? `Monitoring energii i jakości środowiska — ${branding.municipality_name}`
+                  : 'Monitoring energii i jakości środowiska')}
+            </p>
           </div>
           <button
             type="button"

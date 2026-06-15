@@ -19,11 +19,13 @@ export class SolarPanelsService {
     buildingId: string,
     capacityKwp: number,
     installationDate: Date,
+    serialNumber: string,
   ): Promise<SolarPanel> {
     const panel = this.panelsRepository.create({
       building_id: buildingId,
       capacity_kwp: capacityKwp,
       installation_date: installationDate,
+      serial_number: serialNumber,
     });
     return this.panelsRepository.save(panel);
   }

@@ -38,12 +38,14 @@ export class SolarPanelsController {
       building_id: string;
       capacity_kwp: number;
       installation_date: string;
+      serial_number: string;
     },
   ) {
     return this.panelsService.createPanel(
       createPanelDto.building_id,
       createPanelDto.capacity_kwp,
       new Date(createPanelDto.installation_date),
+      createPanelDto.serial_number,
     );
   }
 }

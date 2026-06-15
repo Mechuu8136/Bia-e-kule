@@ -1,0 +1,243 @@
+.api-key-management {
+  min-height: 100%;
+  background: #f5f5f5;
+  padding: 16px;
+}
+
+.api-key-management-header {
+  background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.api-key-management-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+}
+
+.api-key-management-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.api-key-management .info-banner {
+  background: #eceff1;
+  color: #263238;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #37474f;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.api-key-management .info-banner code {
+  background: #cfd8dc;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
+.raw-key-banner {
+  background: #fff8e1;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.raw-key-banner p {
+  margin: 0 0 12px 0;
+  color: #e65100;
+}
+
+.raw-key-value {
+  display: block;
+  background: #263238;
+  color: #a5d6a7;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  word-break: break-all;
+  margin-bottom: 12px;
+}
+
+.raw-key-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.api-key-management-actions {
+  margin-bottom: 20px;
+}
+
+.api-key-management .btn-primary {
+  background: #37474f;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-key-management .btn-primary:hover {
+  background: #263238;
+}
+
+.api-key-management .btn-primary:disabled {
+  background: #90a4ae;
+  cursor: not-allowed;
+}
+
+.api-key-management .btn-secondary {
+  background: white;
+  color: #37474f;
+  border: 2px solid #37474f;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-key-management .btn-secondary:hover {
+  background: #eceff1;
+}
+
+.api-key-management .btn-danger {
+  background: white;
+  color: #c62828;
+  border: 2px solid #ef9a9a;
+  padding: 8px 14px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-key-management .btn-danger:hover {
+  background: #ffebee;
+}
+
+.api-key-management .error-banner {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid #c62828;
+}
+
+.api-key-management .success-banner {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid #4caf50;
+}
+
+.api-key-form-card,
+.api-keys-table-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.api-key-form-card h2,
+.api-keys-table-card h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.api-key-management .form-row {
+  margin-bottom: 16px;
+}
+
+.api-key-management .form-row label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.api-key-management .form-row input,
+.api-key-management .form-row select {
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.api-key-management .form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.api-keys-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.api-keys-table th,
+.api-keys-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.api-keys-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.api-keys-table code {
+  background: #eceff1;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
+.building-hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.api-key-management .empty-state {
+  color: #888;
+  font-style: italic;
+  padding: 24px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .api-keys-table-card {
+    overflow-x: auto;
+  }
+
+  .api-keys-table {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 768px) {
+  .api-key-management-header h1 {
+    font-size: 1.4rem;
+  }
+}

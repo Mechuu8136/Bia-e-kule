@@ -234,8 +234,65 @@
   background: #e8f5e9;
   padding: 2px 8px;
   border-radius: 12px;
-  margin-bottom: 6px;
   font-weight: 600;
+}
+
+.report-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.public-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.public-badge-visible {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.public-badge-hidden {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.btn-toggle-public {
+  background: white;
+  color: #1565c0;
+  border: 2px solid #90caf9;
+  padding: 8px 12px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-toggle-public:hover {
+  background: #e3f2fd;
+}
+
+.form-group-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .report-header h4 {

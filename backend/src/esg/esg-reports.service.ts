@@ -20,12 +20,14 @@ export class EsgReportsService {
     buildingId: string | null,
     co2ReductionKg: number,
     documentUrl?: string,
+    isPublic = false,
   ): Promise<EsgReport> {
     const report = new EsgReport();
     report.generated_by_id = generatedById;
     report.building_id = buildingId || undefined;
     report.co2_reduction_kg = co2ReductionKg;
     report.document_url = documentUrl;
+    report.is_public = buildingId ? false : isPublic;
     return this.reportsRepository.save(report);
   }
 
@@ -71,6 +73,13 @@ export class EsgReportsService {
     });
   }
 
+  async findPublicGlobalReports(): Promise<EsgReport[]> {
+    return this.reportsRepository.find({
+      where: { building_id: IsNull(), is_public: true },
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async findReportById(reportId: string): Promise<EsgReport | null> {
     return this.reportsRepository.findOne({
       where: { id: reportId },
@@ -101,7 +110,7 @@ export class EsgReportsService {
       return this.reportsRepository.find({
         where: [
           { building_id: In(buildingIds) },
-          { building_id: IsNull() },
+          { building_id: IsNull(), is_public: true },
         ],
         order: { created_at: 'DESC' },
       });
@@ -113,7 +122,7 @@ export class EsgReportsService {
       });
 
       if (userBuildings.length === 0) {
-        return this.findGlobalReports();
+        return this.findPublicGlobalReports();
       }
 
       const buildingIds = userBuildings.map((ub) => ub.building_id);
@@ -121,7 +130,7 @@ export class EsgReportsService {
       return this.reportsRepository.find({
         where: [
           { building_id: In(buildingIds) },
-          { building_id: IsNull() },
+          { building_id: IsNull(), is_public: true },
         ],
         order: { created_at: 'DESC' },
       });
@@ -132,13 +141,31 @@ export class EsgReportsService {
 
   async updateReport(
     reportId: string,
-    co2ReductionKg?: number,
-    documentUrl?: string,
+    updates: {
+      co2ReductionKg?: number;
+      documentUrl?: string;
+      isPublic?: boolean;
+    },
   ): Promise<EsgReport | null> {
-    await this.reportsRepository.update(reportId, {
-      ...(co2ReductionKg && { co2_reduction_kg: co2ReductionKg }),
-      ...(documentUrl && { document_url: documentUrl }),
-    });
+    const report = await this.findReportById(reportId);
+    if (!report) return null;
+
+    const patch: Partial<EsgReport> = {};
+
+    if (updates.co2ReductionKg !== undefined) {
+      patch.co2_reduction_kg = updates.co2ReductionKg;
+    }
+    if (updates.documentUrl !== undefined) {
+      patch.document_url = updates.documentUrl;
+    }
+    if (updates.isPublic !== undefined) {
+      patch.is_public = report.building_id ? false : updates.isPublic;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await this.reportsRepository.update(reportId, patch);
+    }
+
     return this.findReportById(reportId);
   }
 
@@ -160,12 +187,14 @@ export class EsgReportsService {
     };
   }
 
-  async getGlobalStatistics(): Promise<{
+  async getGlobalStatistics(publicOnly = false): Promise<{
     totalCo2Reduction: number;
     totalReports: number;
     latestReport: EsgReport | null;
   }> {
-    const reports = await this.findGlobalReports();
+    const reports = publicOnly
+      ? await this.findPublicGlobalReports()
+      : await this.findGlobalReports();
 
     return {
       totalCo2Reduction: reports.reduce((sum, r) => sum + Number(r.co2_reduction_kg), 0),
