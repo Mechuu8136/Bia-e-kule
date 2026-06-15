@@ -1,18 +1,24 @@
-# 1. Wybór obrazu bazowego
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
-# 2. Ustawienie katalogu roboczego wewnątrz kontenera
 WORKDIR /app
 
-# 3. Kopiowanie plików zależności i ich instalacja
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
 
-# 4. Kopiowanie pozostałego kodu źródłowego
 COPY . .
+RUN npm run build
 
-# 5. Informacja, na jakim porcie działa aplikacja
+FROM node:20-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 5000
 
-# 6. Komenda uruchamiająca aplikację w trybie deweloperskim
-CMD ["npm", "run", "start:dev"]
+CMD ["node", "dist/main.js"]

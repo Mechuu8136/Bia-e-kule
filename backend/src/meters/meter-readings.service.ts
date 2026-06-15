@@ -6,6 +6,7 @@ import { Meter } from './meter.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
+import { aggregateByTimeBucket } from '../database/aggregate-time-series';
 
 interface AggregatedData {
   date: string;
@@ -66,30 +67,15 @@ export class MeterReadingsService {
     startDate: Date,
     endDate: Date,
   ): Promise<AggregatedData[]> {
-    const readings = await this.findReadingsByDateRange(
-      meterId,
+    return aggregateByTimeBucket(this.readingsRepository, {
+      alias: 'reading',
+      foreignKeyColumn: 'meter_id',
+      foreignKeyValue: meterId,
+      valueColumn: 'value',
       startDate,
       endDate,
-    );
-
-    const grouped = new Map<string, number[]>();
-
-    readings.forEach((reading) => {
-      const date = reading.timestamp.toISOString().split('T')[0];
-      if (!grouped.has(date)) {
-        grouped.set(date, []);
-      }
-      grouped.get(date)!.push(Number(reading.value));
+      unit: 'day',
     });
-
-    return Array.from(grouped.entries()).map(([date, values]) => ({
-      date,
-      sum: values.reduce((a, b) => a + b, 0),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      count: values.length,
-    }));
   }
 
   async aggregateByHour(
@@ -97,30 +83,15 @@ export class MeterReadingsService {
     startDate: Date,
     endDate: Date,
   ): Promise<AggregatedData[]> {
-    const readings = await this.findReadingsByDateRange(
-      meterId,
+    return aggregateByTimeBucket(this.readingsRepository, {
+      alias: 'reading',
+      foreignKeyColumn: 'meter_id',
+      foreignKeyValue: meterId,
+      valueColumn: 'value',
       startDate,
       endDate,
-    );
-
-    const grouped = new Map<string, number[]>();
-
-    readings.forEach((reading) => {
-      const date = reading.timestamp.toISOString().slice(0, 13);
-      if (!grouped.has(date)) {
-        grouped.set(date, []);
-      }
-      grouped.get(date)!.push(Number(reading.value));
+      unit: 'hour',
     });
-
-    return Array.from(grouped.entries()).map(([date, values]) => ({
-      date,
-      sum: values.reduce((a, b) => a + b, 0),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      count: values.length,
-    }));
   }
 
   async aggregateByMonth(
@@ -128,30 +99,15 @@ export class MeterReadingsService {
     startDate: Date,
     endDate: Date,
   ): Promise<AggregatedData[]> {
-    const readings = await this.findReadingsByDateRange(
-      meterId,
+    return aggregateByTimeBucket(this.readingsRepository, {
+      alias: 'reading',
+      foreignKeyColumn: 'meter_id',
+      foreignKeyValue: meterId,
+      valueColumn: 'value',
       startDate,
       endDate,
-    );
-
-    const grouped = new Map<string, number[]>();
-
-    readings.forEach((reading) => {
-      const date = reading.timestamp.toISOString().slice(0, 7);
-      if (!grouped.has(date)) {
-        grouped.set(date, []);
-      }
-      grouped.get(date)!.push(Number(reading.value));
+      unit: 'month',
     });
-
-    return Array.from(grouped.entries()).map(([date, values]) => ({
-      date,
-      sum: values.reduce((a, b) => a + b, 0),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      count: values.length,
-    }));
   }
 
   async getStatistics(meterId: string): Promise<{
@@ -161,9 +117,23 @@ export class MeterReadingsService {
     avgValue: number;
     latestReading: MeterReading | null;
   }> {
-    const readings = await this.findReadingsByMeter(meterId);
+    const stats = await this.readingsRepository
+      .createQueryBuilder('reading')
+      .select('COUNT(*)', 'totalReadings')
+      .addSelect('MIN(reading.value)', 'minValue')
+      .addSelect('MAX(reading.value)', 'maxValue')
+      .addSelect('AVG(reading.value)', 'avgValue')
+      .where('reading.meter_id = :meterId', { meterId })
+      .getRawOne<{
+        totalReadings: string;
+        minValue: string | null;
+        maxValue: string | null;
+        avgValue: string | null;
+      }>();
 
-    if (readings.length === 0) {
+    const totalReadings = Number(stats?.totalReadings ?? 0);
+
+    if (totalReadings === 0) {
       return {
         totalReadings: 0,
         minValue: 0,
@@ -173,14 +143,17 @@ export class MeterReadingsService {
       };
     }
 
-    const values = readings.map((r) => Number(r.value));
+    const latestReading = await this.readingsRepository.findOne({
+      where: { meter_id: meterId },
+      order: { timestamp: 'DESC' },
+    });
 
     return {
-      totalReadings: readings.length,
-      minValue: Math.min(...values),
-      maxValue: Math.max(...values),
-      avgValue: values.reduce((a, b) => a + b, 0) / values.length,
-      latestReading: readings[readings.length - 1],
+      totalReadings,
+      minValue: Number(stats?.minValue ?? 0),
+      maxValue: Number(stats?.maxValue ?? 0),
+      avgValue: Number(stats?.avgValue ?? 0),
+      latestReading,
     };
   }
 

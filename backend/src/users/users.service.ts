@@ -2,11 +2,13 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from './user.entity';
 import { UserBuilding } from './user-building.entity';
+import { Building } from '../buildings/building.entity';
 import { UserRole } from './user-role.enum';
 import { UserBuildingLinkType } from './user-building-link-type.enum';
 import * as bcrypt from 'bcrypt';
@@ -25,6 +27,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    @InjectRepository(Building)
+    private buildingsRepository: Repository<Building>,
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
@@ -76,11 +80,13 @@ export class UsersService {
     });
     const savedUser = await this.usersRepository.save(user);
 
-    if (
-      buildingIds &&
-      buildingIds.length > 0 &&
-      role === UserRole.DYREKTOR
-    ) {
+    if (role === UserRole.DYREKTOR) {
+      if (!buildingIds || buildingIds.length === 0) {
+        throw new BadRequestException(
+          'Dyrektor wymaga przypisania co najmniej jednego budynku',
+        );
+      }
+      await this.validateBuildingIds(buildingIds);
       for (const buildingId of buildingIds) {
         await this.assignBuildingToUser(
           savedUser.id,
@@ -112,6 +118,14 @@ export class UsersService {
         'Przypisanie budynków przez urzędnika jest dostępne tylko dla dyrektora',
       );
     }
+
+    if (buildingIds.length === 0) {
+      throw new BadRequestException(
+        'Wybierz co najmniej jeden budynek dla dyrektora',
+      );
+    }
+
+    await this.validateBuildingIds(buildingIds);
 
     await this.userBuildingsRepository.delete({
       user_id: userId,
@@ -210,12 +224,36 @@ export class UsersService {
     buildingId: string,
     linkType: UserBuildingLinkType,
   ): Promise<UserBuilding> {
+    const existing = await this.userBuildingsRepository.findOne({
+      where: {
+        user_id: userId,
+        building_id: buildingId,
+        link_type: linkType,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     const userBuilding = this.userBuildingsRepository.create({
       user_id: userId,
       building_id: buildingId,
       link_type: linkType,
     });
     return this.userBuildingsRepository.save(userBuilding);
+  }
+
+  private async validateBuildingIds(buildingIds: string[]): Promise<void> {
+    const uniqueIds = [...new Set(buildingIds)];
+    const found = await this.buildingsRepository.find({
+      where: { id: In(uniqueIds) },
+      select: { id: true },
+    });
+
+    if (found.length !== uniqueIds.length) {
+      throw new BadRequestException('Jeden lub więcej budynków nie istnieje');
+    }
   }
 
   async upsertProvisionedUser(
@@ -228,16 +266,12 @@ export class UsersService {
     const existing = await this.findByEmail(email);
 
     if (!existing) {
-      const created = await this.createUser(email, plainPassword, role);
-      if (role === UserRole.DYREKTOR) {
-        for (const buildingId of assignedBuildingIds) {
-          await this.assignBuildingToUser(
-            created.id,
-            buildingId,
-            UserBuildingLinkType.ASSIGNED,
-          );
-        }
-      }
+      const created = await this.createUser(
+        email,
+        plainPassword,
+        role,
+        role === UserRole.DYREKTOR ? assignedBuildingIds : undefined,
+      );
       if (role === UserRole.MIESZKANIEC) {
         for (const buildingId of favoriteBuildingIds) {
           await this.addFavoriteBuilding(created.id, buildingId);
@@ -258,6 +292,7 @@ export class UsersService {
     }
 
     if (role === UserRole.DYREKTOR) {
+      await this.validateBuildingIds(assignedBuildingIds);
       await this.userBuildingsRepository.delete({
         user_id: existing.id,
         link_type: UserBuildingLinkType.ASSIGNED,

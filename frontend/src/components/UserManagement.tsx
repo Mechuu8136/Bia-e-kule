@@ -25,7 +25,7 @@ const supportsAdminBuildingAssignment = (role: string): boolean => role === 'dyr
 interface BuildingCheckboxListProps {
   buildings: Building[];
   selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  onChange: (updater: (prev: string[]) => string[]) => void;
   idPrefix: string;
 }
 
@@ -35,40 +35,43 @@ const BuildingCheckboxList: React.FC<BuildingCheckboxListProps> = ({
   onChange,
   idPrefix,
 }) => {
-  const toggleBuilding = (buildingId: string) => {
-    if (selectedIds.includes(buildingId)) {
-      onChange(selectedIds.filter((id) => id !== buildingId));
-    } else {
-      onChange([...selectedIds, buildingId]);
-    }
-  };
-
   if (buildings.length === 0) {
     return <p className="form-hint">Brak budynków w systemie.</p>;
   }
 
   return (
     <div className="building-checkboxes" role="group" aria-label="Wybór budynków">
-      {buildings.map((building) => (
-        <label
-          key={building.id}
-          className="building-checkbox-label"
-          htmlFor={`${idPrefix}-${building.id}`}
-        >
-          <input
-            type="checkbox"
-            id={`${idPrefix}-${building.id}`}
-            checked={selectedIds.includes(building.id)}
-            onChange={() => toggleBuilding(building.id)}
-          />
-          <span className="building-checkbox-text">
-            <strong>{building.name}</strong>
-            <span>
-              {getBuildingTypeLabel(building.type)} — {building.address}
+      {buildings.map((building) => {
+        const inputId = `${idPrefix}-${building.id}`;
+        const isChecked = selectedIds.includes(building.id);
+
+        return (
+          <label key={building.id} className="building-checkbox-label">
+            <input
+              type="checkbox"
+              id={inputId}
+              checked={isChecked}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                onChange((prev) => {
+                  if (checked) {
+                    return prev.includes(building.id)
+                      ? prev
+                      : [...prev, building.id];
+                  }
+                  return prev.filter((id) => id !== building.id);
+                });
+              }}
+            />
+            <span className="building-checkbox-text">
+              <strong>{building.name}</strong>
+              <span>
+                {getBuildingTypeLabel(building.type)} — {building.address}
+              </span>
             </span>
-          </span>
-        </label>
-      ))}
+          </label>
+        );
+      })}
     </div>
   );
 };
@@ -343,7 +346,12 @@ export const UserManagement: React.FC = () => {
                 <BuildingCheckboxList
                   buildings={buildings}
                   selectedIds={formData.building_ids}
-                  onChange={(ids) => setFormData({ ...formData, building_ids: ids })}
+                  onChange={(updater) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      building_ids: updater(prev.building_ids),
+                    }))
+                  }
                   idPrefix="create"
                 />
               </div>
@@ -411,7 +419,7 @@ export const UserManagement: React.FC = () => {
                         <BuildingCheckboxList
                           buildings={buildings}
                           selectedIds={editBuildingIds}
-                          onChange={setEditBuildingIds}
+                          onChange={(updater) => setEditBuildingIds(updater)}
                           idPrefix={`edit-${user.id}`}
                         />
                         <div className="form-actions">
