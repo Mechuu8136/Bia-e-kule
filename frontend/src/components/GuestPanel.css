@@ -39,13 +39,18 @@
 .btn-login-header {
   background: white;
   color: #1565c0;
-  border: none;
-  padding: 12px 24px;
+  border: 2px solid white;
+  padding: 10px 24px;
   min-height: 44px;
+  height: auto;
+  width: auto;
+  flex: 0 0 auto;
+  align-self: center;
   border-radius: 6px;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 

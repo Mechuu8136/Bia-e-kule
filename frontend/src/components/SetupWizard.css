@@ -1,0 +1,106 @@
+.setup-wizard-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f0f4f8 100%);
+  padding: 24px;
+}
+
+.setup-wizard-card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.setup-wizard-header h1 {
+  margin: 0 0 8px 0;
+  color: #1565c0;
+  font-size: 1.75rem;
+}
+
+.setup-wizard-header p {
+  margin: 0;
+  color: #666;
+}
+
+.setup-intro {
+  margin: 20px 0;
+  color: #444;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.setup-form .form-row {
+  margin-bottom: 16px;
+}
+
+.setup-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.setup-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.btn-setup {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.btn-setup:disabled {
+  background: #90caf9;
+  cursor: not-allowed;
+}
+
+.setup-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid #c62828;
+}
+
+.setup-api-key {
+  background: #fff8e1;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.setup-api-key code {
+  display: block;
+  background: #263238;
+  color: #a5d6a7;
+  padding: 12px;
+  border-radius: 4px;
+  word-break: break-all;
+  margin: 12px 0;
+  font-size: 0.85rem;
+}
+
+.setup-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}

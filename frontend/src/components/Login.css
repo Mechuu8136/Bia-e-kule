@@ -9,12 +9,6 @@
   padding: 20px;
 }
 
-.login-container-modal {
-  min-height: auto;
-  background: transparent;
-  padding: 0;
-}
-
 .login-card-modal {
   position: relative;
   max-width: 420px;
@@ -46,6 +40,15 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
   padding: 20px;
+}
+
+.login-overlay .login-container.login-container-modal {
+  min-height: unset;
+  height: auto;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  max-width: 440px;
 }
 
 .login-card {
@@ -126,6 +129,9 @@
   cursor: pointer;
   transition: background 0.3s, box-shadow 0.3s;
   min-height: 44px;
+  width: 100%;
+  flex: 0 0 auto;
+  align-self: stretch;
 }
 
 .btn-login:hover:not(:disabled) {

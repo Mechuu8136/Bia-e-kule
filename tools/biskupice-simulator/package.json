@@ -1,0 +1,11 @@
+{
+  "name": "biskupice-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Symulator Gminy Biskupice — testowa integracja z EnergyCity przez API",
+  "scripts": {
+    "seed": "node index.js seed",
+    "sync": "node index.js sync",
+    "live": "node index.js live"
+  }
+}

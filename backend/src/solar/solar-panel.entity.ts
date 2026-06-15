@@ -27,6 +27,9 @@ export class SolarPanel {
   @Column({ type: 'date' })
   installation_date!: Date;
 
+  @Column({ unique: true })
+  serial_number!: string;
+
   @OneToMany(() => SolarProduction, (production) => production.panel)
   production!: SolarProduction[];
 }

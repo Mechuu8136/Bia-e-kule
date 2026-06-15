@@ -6,6 +6,7 @@ export interface EsgReport {
   building_id?: string;
   co2_reduction_kg: number;
   document_url?: string;
+  is_public: boolean;
   created_at: string;
 }
 
@@ -29,13 +30,20 @@ export const esgService = {
   createReport: (
     buildingId: string | null,
     co2ReductionKg: number,
-    documentUrl?: string
+    documentUrl?: string,
+    isPublic?: boolean,
   ) =>
     apiClient.post<EsgReport>('/esg-reports', {
       building_id: buildingId,
       co2_reduction_kg: co2ReductionKg,
       document_url: documentUrl,
+      is_public: isPublic,
     }),
+
+  updateReport: (
+    reportId: string,
+    payload: { is_public?: boolean; co2_reduction_kg?: number; document_url?: string },
+  ) => apiClient.patch<EsgReport>(`/esg-reports/${reportId}`, payload),
 
   deleteReport: (reportId: string) =>
     apiClient.delete(`/esg-reports/${reportId}`),

@@ -27,6 +27,9 @@ export class Building {
   })
   type!: BuildingType;
 
+  @Column({ unique: true, nullable: true })
+  external_code?: string;
+
   @OneToMany(() => UserBuilding, (userBuilding) => userBuilding.building)
   managers!: UserBuilding[];
 }

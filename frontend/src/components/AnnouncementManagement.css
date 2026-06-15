@@ -1,0 +1,230 @@
+.announcement-management {
+  min-height: 100%;
+  background: #f5f5f5;
+  padding: 16px;
+}
+
+.announcement-management-header {
+  background: linear-gradient(135deg, #00796b 0%, #004d40 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.announcement-management-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+}
+
+.announcement-management-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.announcement-management .info-banner {
+  background: #e0f2f1;
+  color: #004d40;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #00796b;
+  font-size: 0.95rem;
+}
+
+.announcement-management-actions {
+  margin-bottom: 20px;
+}
+
+.announcement-management .btn-primary {
+  background: #00796b;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.announcement-management .btn-primary:hover {
+  background: #004d40;
+}
+
+.announcement-management .btn-primary:disabled {
+  background: #80cbc4;
+  cursor: not-allowed;
+}
+
+.announcement-management .btn-secondary {
+  background: white;
+  color: #00796b;
+  border: 2px solid #00796b;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.announcement-management .btn-secondary:hover {
+  background: #e0f2f1;
+}
+
+.announcement-management .btn-danger {
+  background: white;
+  color: #c62828;
+  border: 2px solid #ef9a9a;
+  padding: 8px 14px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.announcement-management .btn-danger:hover {
+  background: #ffebee;
+}
+
+.announcement-management .error-banner {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid #c62828;
+}
+
+.announcement-management .success-banner {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid #4caf50;
+}
+
+.announcement-form-card,
+.announcements-table-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.announcement-form-card h2,
+.announcements-table-card h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.announcement-management .form-row {
+  margin-bottom: 16px;
+}
+
+.announcement-management .form-row label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.announcement-management .form-row input[type='text'],
+.announcement-management .form-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.announcement-management .form-row-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.announcement-management .form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.announcements-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.announcement-admin-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  border-left: 4px solid #00796b;
+}
+
+.announcement-admin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.announcement-admin-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #004d40;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.status-published {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-draft {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.announcement-admin-date {
+  display: block;
+  font-size: 0.8rem;
+  color: #888;
+  margin: 8px 0;
+}
+
+.announcement-admin-body {
+  margin: 0 0 12px 0;
+  color: #444;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.announcement-management .empty-state {
+  color: #888;
+  font-style: italic;
+  padding: 24px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .announcement-management-header h1 {
+    font-size: 1.4rem;
+  }
+}

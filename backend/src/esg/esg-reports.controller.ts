@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
 import { EsgReportsService } from './esg-reports.service';
+import { CreateEsgReportDto } from './dto/create-esg-report.dto';
+import { UpdateEsgReportDto } from './dto/update-esg-report.dto';
 
 @Controller('esg-reports')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,8 +21,12 @@ export class EsgReportsController {
 
   @Get('global')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR, UserRole.MIESZKANIEC)
-  async findGlobal() {
-    return this.reportsService.findGlobalReports();
+  async findGlobal(@Req() req: any) {
+    const user = req.user as { role: UserRole };
+    if (user.role === UserRole.URZEDNIK) {
+      return this.reportsService.findGlobalReports();
+    }
+    return this.reportsService.findPublicGlobalReports();
   }
 
   @Get('building/:buildingId')
@@ -55,8 +61,10 @@ export class EsgReportsController {
 
   @Get('global/statistics')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR, UserRole.MIESZKANIEC)
-  async getGlobalStatistics() {
-    return this.reportsService.getGlobalStatistics();
+  async getGlobalStatistics(@Req() req: any) {
+    const user = req.user as { role: UserRole };
+    const publicOnly = user.role !== UserRole.URZEDNIK;
+    return this.reportsService.getGlobalStatistics(publicOnly);
   }
 
   @Get(':reportId')
@@ -74,21 +82,29 @@ export class EsgReportsController {
 
   @Post()
   @Roles(UserRole.URZEDNIK)
-  async create(
-    @Body()
-    createReportDto: {
-      building_id: string | null;
-      co2_reduction_kg: number;
-      document_url?: string;
-    },
-    @Req() req: any,
-  ) {
+  async create(@Body() createReportDto: CreateEsgReportDto, @Req() req: any) {
     const user = req.user as { sub: string };
+    const buildingId = createReportDto.building_id ?? null;
     return this.reportsService.createReport(
       user.sub,
-      createReportDto.building_id,
+      buildingId,
       createReportDto.co2_reduction_kg,
       createReportDto.document_url,
+      createReportDto.is_public ?? false,
     );
+  }
+
+  @Patch(':reportId')
+  @Roles(UserRole.URZEDNIK)
+  async update(@Param('reportId') reportId: string, @Body() dto: UpdateEsgReportDto) {
+    const updated = await this.reportsService.updateReport(reportId, {
+      co2ReductionKg: dto.co2_reduction_kg,
+      documentUrl: dto.document_url,
+      isPublic: dto.is_public,
+    });
+    if (!updated) {
+      throw new NotFoundException('Raport nie został znaleziony');
+    }
+    return updated;
   }
 }

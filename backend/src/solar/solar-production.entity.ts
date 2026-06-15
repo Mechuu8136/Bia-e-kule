@@ -4,10 +4,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { SolarPanel } from './solar-panel.entity';
 
 @Entity('solar_production')
+@Unique(['panel_id', 'timestamp'])
 export class SolarProduction {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

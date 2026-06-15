@@ -28,7 +28,7 @@ export class Meter {
   })
   type!: MeterType;
 
-  @Column()
+  @Column({ unique: true })
   serial_number!: string;
 
   @Column()

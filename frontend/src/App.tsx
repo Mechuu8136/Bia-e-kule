@@ -3,14 +3,19 @@ import { ConsumptionMonitor } from './components/ConsumptionMonitor';
 import { OZEDashboard } from './components/OZEDashboard';
 import { ESGReports } from './components/ESGReports';
 import { UserManagement } from './components/UserManagement';
+import { AnnouncementManagement } from './components/AnnouncementManagement';
+import { ApiKeyManagement } from './components/ApiKeyManagement';
 import { MyBuildingsDirector } from './components/MyBuildingsDirector';
 import { MyBuildingsResident } from './components/MyBuildingsResident';
 import { GuestPanel } from './components/GuestPanel';
 import { Login } from './components/Login';
+import { SetupWizard } from './components/SetupWizard';
+import { MunicipalitySettingsPanel } from './components/MunicipalitySettingsPanel';
+import { municipalityService } from './services/municipalityService';
 import { getRoleLabel } from './utils/roleLabels';
 import './App.css';
 
-type Page = 'my-buildings' | 'consumption' | 'oze' | 'esg' | 'users';
+type Page = 'my-buildings' | 'consumption' | 'oze' | 'esg' | 'users' | 'announcements' | 'api-keys' | 'settings';
 
 const defaultPageForRole = (role: string): Page => {
   if (role === 'mieszkaniec' || role === 'dyrektor') return 'my-buildings';
@@ -23,19 +28,42 @@ function App() {
   const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (token) {
-      setIsLoggedIn(true);
-      if (role) {
-        setUserRole(role);
-        setCurrentPage(defaultPageForRole(role));
+    const init = async () => {
+      try {
+        const setupRes = await municipalityService.getSetupStatus();
+        setNeedsSetup(setupRes.data.needs_setup);
+      } catch {
+        setNeedsSetup(false);
       }
-    }
-    setLoading(false);
+
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      if (token) {
+        setIsLoggedIn(true);
+        if (role) {
+          setUserRole(role);
+          setCurrentPage(defaultPageForRole(role));
+        }
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
+
+  const handleSetupComplete = (result: {
+    access_token: string;
+    role: string;
+  }) => {
+    localStorage.setItem('token', result.access_token);
+    localStorage.setItem('role', result.role);
+    setNeedsSetup(false);
+    setIsLoggedIn(true);
+    setUserRole(result.role);
+    setCurrentPage('settings');
+  };
 
   const handleLoginSuccess = (_token: string, role: string) => {
     setIsLoggedIn(true);
@@ -53,6 +81,10 @@ function App() {
   };
 
   if (loading) return <div className="loading">Ładowanie...</div>;
+
+  if (needsSetup) {
+    return <SetupWizard onComplete={handleSetupComplete} />;
+  }
 
   if (!isLoggedIn) {
     return (
@@ -101,6 +133,9 @@ function App() {
             {(isUrzędnik || isDyrektor) && navButton('oze', '☀️ Dashboard OZE')}
             {(isUrzędnik || isDyrektor || isMieszkaniec) && navButton('esg', '📊 Raporty ESG')}
             {isUrzędnik && navButton('users', '👥 Użytkownicy')}
+            {isUrzędnik && navButton('announcements', '📢 Aktualności')}
+            {isUrzędnik && navButton('api-keys', '🔑 Klucze API')}
+            {isUrzędnik && navButton('settings', '⚙️ Konfiguracja')}
             <button className="nav-btn btn-logout" onClick={handleLogout} aria-label="Wyloguj się">
               🚪 Wyloguj
             </button>
@@ -119,6 +154,9 @@ function App() {
         )}
         {currentPage === 'esg' && <ESGReports userRole={userRole} />}
         {currentPage === 'users' && isUrzędnik && <UserManagement />}
+        {currentPage === 'announcements' && isUrzędnik && <AnnouncementManagement />}
+        {currentPage === 'api-keys' && isUrzędnik && <ApiKeyManagement />}
+        {currentPage === 'settings' && isUrzędnik && <MunicipalitySettingsPanel />}
       </main>
 
       <footer className="app-footer" role="contentinfo">

@@ -4,10 +4,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { Meter } from './meter.entity';
 
 @Entity('meter_readings')
+@Unique(['meter_id', 'timestamp'])
 export class MeterReading {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

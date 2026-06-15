@@ -39,8 +39,9 @@ export class AirQualityService {
   }
 
   async getLatest(): Promise<AirQualitySnapshot | null> {
-    const reading = await this.repository.findOne({
+    const [reading] = await this.repository.find({
       order: { timestamp: 'DESC' },
+      take: 1,
     });
 
     if (!reading) return null;

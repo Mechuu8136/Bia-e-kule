@@ -34,6 +34,9 @@ export class EsgReport {
   @Column({ nullable: true })
   document_url?: string;
 
+  @Column({ default: false })
+  is_public!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 }

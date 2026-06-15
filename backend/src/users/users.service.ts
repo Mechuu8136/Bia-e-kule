@@ -31,6 +31,13 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { email } });
   }
 
+  async hasUrzędnik(): Promise<boolean> {
+    const count = await this.usersRepository.count({
+      where: { role: UserRole.URZEDNIK },
+    });
+    return count > 0;
+  }
+
   async findAll(): Promise<UserListItem[]> {
     const users = await this.usersRepository.find({
       order: { email: 'ASC' },
@@ -209,6 +216,77 @@ export class UsersService {
       link_type: linkType,
     });
     return this.userBuildingsRepository.save(userBuilding);
+  }
+
+  async upsertProvisionedUser(
+    email: string,
+    plainPassword: string,
+    role: UserRole.DYREKTOR | UserRole.MIESZKANIEC,
+    assignedBuildingIds: string[],
+    favoriteBuildingIds: string[],
+  ): Promise<{ id: string; email: string; role: UserRole; created: boolean }> {
+    const existing = await this.findByEmail(email);
+
+    if (!existing) {
+      const created = await this.createUser(email, plainPassword, role);
+      if (role === UserRole.DYREKTOR) {
+        for (const buildingId of assignedBuildingIds) {
+          await this.assignBuildingToUser(
+            created.id,
+            buildingId,
+            UserBuildingLinkType.ASSIGNED,
+          );
+        }
+      }
+      if (role === UserRole.MIESZKANIEC) {
+        for (const buildingId of favoriteBuildingIds) {
+          await this.addFavoriteBuilding(created.id, buildingId);
+        }
+      }
+      return {
+        id: created.id,
+        email: created.email,
+        role: created.role,
+        created: true,
+      };
+    }
+
+    if (existing.role !== role) {
+      throw new ConflictException(
+        `Użytkownik ${email} istnieje z inną rolą (${existing.role})`,
+      );
+    }
+
+    if (role === UserRole.DYREKTOR) {
+      await this.userBuildingsRepository.delete({
+        user_id: existing.id,
+        link_type: UserBuildingLinkType.ASSIGNED,
+      });
+      for (const buildingId of assignedBuildingIds) {
+        await this.assignBuildingToUser(
+          existing.id,
+          buildingId,
+          UserBuildingLinkType.ASSIGNED,
+        );
+      }
+    }
+
+    if (role === UserRole.MIESZKANIEC) {
+      await this.userBuildingsRepository.delete({
+        user_id: existing.id,
+        link_type: UserBuildingLinkType.FAVORITE,
+      });
+      for (const buildingId of favoriteBuildingIds) {
+        await this.addFavoriteBuilding(existing.id, buildingId);
+      }
+    }
+
+    return {
+      id: existing.id,
+      email: existing.email,
+      role: existing.role,
+      created: false,
+    };
   }
 
   private async getBuildingIdsByLinkType(
