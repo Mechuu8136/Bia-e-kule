@@ -6,6 +6,7 @@ import { SolarPanel } from './solar-panel.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
+import { aggregateByTimeBucket } from '../database/aggregate-time-series';
 
 interface AggregatedProduction {
   date: string;
@@ -61,35 +62,35 @@ export class SolarProductionService {
     });
   }
 
+  private mapAggregatedProduction(
+    rows: Awaited<ReturnType<typeof aggregateByTimeBucket>>,
+  ): AggregatedProduction[] {
+    return rows.map((row) => ({
+      date: row.date,
+      totalProduction: row.sum,
+      avgProduction: row.avg,
+      maxProduction: row.max,
+      minProduction: row.min,
+      readingsCount: row.count,
+    }));
+  }
+
   async aggregateByDay(
     panelId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<AggregatedProduction[]> {
-    const productions = await this.findProductionByDateRange(
-      panelId,
+    const rows = await aggregateByTimeBucket(this.productionRepository, {
+      alias: 'production',
+      foreignKeyColumn: 'panel_id',
+      foreignKeyValue: panelId,
+      valueColumn: 'energy_produced_kwh',
       startDate,
       endDate,
-    );
-
-    const grouped = new Map<string, number[]>();
-
-    productions.forEach((prod) => {
-      const date = prod.timestamp.toISOString().split('T')[0];
-      if (!grouped.has(date)) {
-        grouped.set(date, []);
-      }
-      grouped.get(date)!.push(Number(prod.energy_produced_kwh));
+      unit: 'day',
     });
 
-    return Array.from(grouped.entries()).map(([date, values]) => ({
-      date,
-      totalProduction: values.reduce((a, b) => a + b, 0),
-      avgProduction: values.reduce((a, b) => a + b, 0) / values.length,
-      maxProduction: Math.max(...values),
-      minProduction: Math.min(...values),
-      readingsCount: values.length,
-    }));
+    return this.mapAggregatedProduction(rows);
   }
 
   async aggregateByMonth(
@@ -97,30 +98,17 @@ export class SolarProductionService {
     startDate: Date,
     endDate: Date,
   ): Promise<AggregatedProduction[]> {
-    const productions = await this.findProductionByDateRange(
-      panelId,
+    const rows = await aggregateByTimeBucket(this.productionRepository, {
+      alias: 'production',
+      foreignKeyColumn: 'panel_id',
+      foreignKeyValue: panelId,
+      valueColumn: 'energy_produced_kwh',
       startDate,
       endDate,
-    );
-
-    const grouped = new Map<string, number[]>();
-
-    productions.forEach((prod) => {
-      const date = prod.timestamp.toISOString().slice(0, 7);
-      if (!grouped.has(date)) {
-        grouped.set(date, []);
-      }
-      grouped.get(date)!.push(Number(prod.energy_produced_kwh));
+      unit: 'month',
     });
 
-    return Array.from(grouped.entries()).map(([date, values]) => ({
-      date,
-      totalProduction: values.reduce((a, b) => a + b, 0),
-      avgProduction: values.reduce((a, b) => a + b, 0) / values.length,
-      maxProduction: Math.max(...values),
-      minProduction: Math.min(...values),
-      readingsCount: values.length,
-    }));
+    return this.mapAggregatedProduction(rows);
   }
 
   async getStatistics(panelId: string): Promise<{
@@ -131,9 +119,25 @@ export class SolarProductionService {
     minProduction: number;
     latestReading: SolarProduction | null;
   }> {
-    const productions = await this.findProductionByPanel(panelId);
+    const stats = await this.productionRepository
+      .createQueryBuilder('production')
+      .select('COUNT(*)', 'totalReadings')
+      .addSelect('SUM(production.energy_produced_kwh)', 'totalProduction')
+      .addSelect('AVG(production.energy_produced_kwh)', 'avgProduction')
+      .addSelect('MAX(production.energy_produced_kwh)', 'maxProduction')
+      .addSelect('MIN(production.energy_produced_kwh)', 'minProduction')
+      .where('production.panel_id = :panelId', { panelId })
+      .getRawOne<{
+        totalReadings: string;
+        totalProduction: string | null;
+        avgProduction: string | null;
+        maxProduction: string | null;
+        minProduction: string | null;
+      }>();
 
-    if (productions.length === 0) {
+    const totalReadings = Number(stats?.totalReadings ?? 0);
+
+    if (totalReadings === 0) {
       return {
         totalReadings: 0,
         totalProduction: 0,
@@ -144,15 +148,18 @@ export class SolarProductionService {
       };
     }
 
-    const values = productions.map((p) => Number(p.energy_produced_kwh));
+    const latestReading = await this.productionRepository.findOne({
+      where: { panel_id: panelId },
+      order: { timestamp: 'DESC' },
+    });
 
     return {
-      totalReadings: productions.length,
-      totalProduction: values.reduce((a, b) => a + b, 0),
-      avgProduction: values.reduce((a, b) => a + b, 0) / values.length,
-      maxProduction: Math.max(...values),
-      minProduction: Math.min(...values),
-      latestReading: productions[productions.length - 1],
+      totalReadings,
+      totalProduction: Number(stats?.totalProduction ?? 0),
+      avgProduction: Number(stats?.avgProduction ?? 0),
+      maxProduction: Number(stats?.maxProduction ?? 0),
+      minProduction: Number(stats?.minProduction ?? 0),
+      latestReading,
     };
   }
 

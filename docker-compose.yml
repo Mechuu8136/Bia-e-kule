@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # 1. Baza danych PostgreSQL
   postgres_db:
     image: postgres:15-alpine
     container_name: energycity_db
@@ -13,29 +10,40 @@ services:
       - "5435:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # 2. Aplikacja Backendowa
-      #backend_api:
-      #  build: ./backend
-      # container_name: energycity_backend
-      #ports:
-      # - "5000:5000"
-      #environment:
-      # - DATABASE_URL=postgres://admin:super_secret_password@postgres_db:5432/energycity_metrics
-      #- PORT=5000
-      #depends_on:
-      #  - postgres_db # Backend ruszy dopiero, gdy baza danych będzie gotowa
-      # 3. Aplikacja Frontendowa
-      #frontend_app:
-      # build: ./frontend
-      #container_name: energycity_frontend
-      #ports:
-      #  - "3000:3000"
-      #volumes:
-      #  - ./frontend:/app
-      #  - /app/node_modules
-      #depends_on:
-      #  - backend_api
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d energycity_metrics"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
-      # Definicja wolumenu, dzięki któremu dane w bazie nie znikną po wyłączeniu kontenera
+  backend_api:
+    build: ./backend
+    container_name: energycity_backend
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgres://admin:super_secret_password@postgres_db:5432/energycity_metrics
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      PORT: 5000
+      NODE_ENV: production
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend_app:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000/api}
+    container_name: energycity_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend_api
+    restart: unless-stopped
+
 volumes:
   pg_data:

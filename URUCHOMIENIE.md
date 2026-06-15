@@ -1,14 +1,49 @@
 # EnergyCity - Instrukcje Uruchomienia
 
-## 1. Uruchomić bazę danych (PostgreSQL)
+## Szybki start (Docker — pełny stack)
+
+Wymaga: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ```bash
-docker-compose up -d postgres_db
+# Opcjonalnie: skopiuj .env.example → .env i ustaw JWT_SECRET
+docker compose up -d --build
+```
+
+| Usługa   | URL |
+|----------|-----|
+| Frontend | http://localhost:3000 |
+| Backend  | http://localhost:5000/api |
+| Swagger  | http://localhost:5000/api/docs |
+| PostgreSQL (host) | localhost:5435 |
+
+Przy pierwszym starcie backend uruchamia migracje bazy. Następnie przejdź do **sekcji 4** (kreator konfiguracji).
+
+```bash
+# Logi
+docker compose logs -f backend_api
+
+# Zatrzymanie (dane w bazie zostają)
+docker compose down
+
+# Reset bazy od zera
+docker compose down -v
+```
+
+Symulator Biskupice uruchamiasz **na hoście** (nie w kontenerze) — `API_URL=http://localhost:5000/api`.
+
+---
+
+## Uruchomienie deweloperskie (bez Dockera dla aplikacji)
+
+### 1. Uruchomić bazę danych (PostgreSQL)
+
+```bash
+docker compose up -d postgres_db
 ```
 
 Czekaj ~10 sekund aby baza się uruchomiła.
 
-## 2. Uruchomić Backend (NestJS)
+### 2. Uruchomić Backend (NestJS)
 
 ```bash
 cd backend
@@ -16,9 +51,13 @@ npm install  # jeśli nie zostało zainstalowane
 npm run start:dev
 ```
 
+Przy starcie backend **automatycznie uruchamia migracje** schematu bazy (TypeORM).
+Na świeżej bazie tworzy wszystkie tabele. Jeśli aktualizujesz projekt z wcześniejszej wersji
+używającej `synchronize`, zresetuj wolumen: `docker compose down -v`, potem uruchom od nowa.
+
 Backend będzie dostępny na: `http://localhost:5000`
 
-## 3. Uruchomić Frontend (React)
+### 3. Uruchomić Frontend (React)
 
 W nowym terminalu:
 
@@ -98,11 +137,6 @@ Konta testowe (`admin@example.com` itd.) **nie istnieją domyślnie**.
 ## 6. Dodawanie Testowych Danych
 
 Aby dodać testowych użytkowników, liczniki, panele itd.:
-
-- **Panel UI (zalecane):** zaloguj się jako urzędnik → zakładka **Użytkownicy**
-- **API:** użyj curl/Postman (przykłady poniżej)
-- **Auto-seed:** przy pierwszym uruchomieniu backend tworzy dane demo (buildings, liczniki, panele)
-
 ### Przykład: Dodanie nowego użytkownika (API)
 
 ```bash
@@ -181,7 +215,6 @@ npm run sync                # odczyt stanu z aplikacji
 Konta testowe tworzone przez symulator (hasło: `password`):
 - `dyrektor@biskupice.test` — dyrektor szkoły
 - `mieszkaniec@biskupice.test` — mieszkaniec z ulubionymi budynkami
-```
 
 Szczegóły: `tools/biskupice-simulator/README.md`
 
@@ -226,9 +259,11 @@ Aplikacja obsługuje:
 ## 8. Rozwiązywanie Problemów
 
 ### Backend się nie uruchamia
-- Sprawdzić czy baza danych jest dostępna: `docker-compose ps`
+- Sprawdzić czy baza danych jest dostępna: `docker compose ps`
 - Sprawdzić .env - czy DATABASE_URL, JWT_SECRET i PORT są ustawione
 - Sprawdzić czy port 5000 nie jest zajęty
+- Błąd migracji (`relation already exists`) — stary schemat z `synchronize`: `docker compose down -v`, uruchom ponownie
+- Ręczne migracje (opcjonalnie): `cd backend && npm run migration:run`
 
 ### Frontend się nie ładuje
 - Sprawdzić czy backend jest dostępny na http://localhost:5000
@@ -249,9 +284,15 @@ Swagger (OpenAPI) dostępny na: `http://localhost:5000/api/docs`
 
 ## 10. Zatrzymanie aplikacji
 
+**Docker (pełny stack):**
+```bash
+docker compose down
+```
+
+**Tryb deweloperski:**
 ```bash
 # Backend - Ctrl+C w terminalu
 # Frontend - Ctrl+C w terminalu
 # Baza danych
-docker-compose down
+docker compose down
 ```

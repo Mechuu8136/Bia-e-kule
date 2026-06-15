@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UsersModule } from './users/users.module';
@@ -55,8 +56,10 @@ import { MunicipalitySettings } from './municipality/municipality-settings.entit
           ApiKey,
           MunicipalitySettings,
         ],
-        synchronize: true,
-        logging: true,
+        synchronize: false,
+        migrations: [join(__dirname, 'migrations', '*.{js,ts}')],
+        migrationsRun: true,
+        logging: configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
     UsersModule,

@@ -97,7 +97,7 @@
   margin-bottom: 16px;
 }
 
-.form-row label {
+.form-row > label {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
@@ -105,8 +105,8 @@
   font-size: 0.9rem;
 }
 
-.form-row input,
-.form-row select {
+.form-row > input,
+.form-row > select {
   width: 100%;
   padding: 10px 12px;
   min-height: 44px;
@@ -115,8 +115,8 @@
   font-size: 1rem;
 }
 
-.form-row input:focus,
-.form-row select:focus {
+.form-row > input:focus,
+.form-row > select:focus {
   outline: none;
   border-color: #5e35b1;
   box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.2);
@@ -147,19 +147,34 @@
   cursor: pointer;
   min-height: 44px;
   padding: 4px 0;
+  margin-bottom: 0;
+  font-weight: normal;
 }
 
-.building-checkbox-label input {
+.building-checkbox-label input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  margin-top: 3px;
-  flex-shrink: 0;
+  min-height: 18px;
+  min-width: 18px;
+  padding: 0;
+  margin: 3px 0 0;
+  flex: 0 0 18px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.building-checkbox-label input[type='checkbox']:focus {
+  outline: 2px solid #5e35b1;
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .building-checkbox-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 .building-checkbox-text strong {
@@ -342,13 +357,13 @@
 
   .user-form-card h2,
   .users-table-card h2,
-  .form-row label,
+  .form-row > label,
   .edit-buildings-panel h3 {
     color: #e0e0e0;
   }
 
-  .form-row input,
-  .form-row select {
+  .form-row > input,
+  .form-row > select {
     background: #2a2a2a;
     border-color: #444;
     color: #e0e0e0;
@@ -357,6 +372,18 @@
   .building-checkboxes {
     background: #2a2a2a;
     border-color: #444;
+  }
+
+  .building-checkbox-text strong {
+    color: #f0f0f0;
+  }
+
+  .building-checkbox-text span {
+    color: #b0b0b0;
+  }
+
+  .form-hint {
+    color: #b0b0b0;
   }
 
   .users-table th {
