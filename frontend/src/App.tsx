@@ -2,30 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { ConsumptionMonitor } from './components/ConsumptionMonitor';
 import { OZEDashboard } from './components/OZEDashboard';
 import { ESGReports } from './components/ESGReports';
+import { UserManagement } from './components/UserManagement';
+import { MyBuildingsDirector } from './components/MyBuildingsDirector';
+import { MyBuildingsResident } from './components/MyBuildingsResident';
+import { GuestPanel } from './components/GuestPanel';
 import { Login } from './components/Login';
+import { getRoleLabel } from './utils/roleLabels';
 import './App.css';
 
-type Page = 'consumption' | 'oze' | 'esg';
+type Page = 'my-buildings' | 'consumption' | 'oze' | 'esg' | 'users';
+
+const defaultPageForRole = (role: string): Page => {
+  if (role === 'mieszkaniec' || role === 'dyrektor') return 'my-buildings';
+  return 'consumption';
+};
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('consumption');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     if (token) {
       setIsLoggedIn(true);
-      if (role) setUserRole(role);
+      if (role) {
+        setUserRole(role);
+        setCurrentPage(defaultPageForRole(role));
+      }
     }
     setLoading(false);
   }, []);
 
-  const handleLoginSuccess = (token: string, role: string) => {
+  const handleLoginSuccess = (_token: string, role: string) => {
     setIsLoggedIn(true);
     setUserRole(role);
+    setCurrentPage(defaultPageForRole(role));
+    setShowLogin(false);
   };
 
   const handleLogout = () => {
@@ -33,13 +49,41 @@ function App() {
     localStorage.removeItem('role');
     setIsLoggedIn(false);
     setUserRole('');
+    setShowLogin(false);
   };
 
   if (loading) return <div className="loading">Ładowanie...</div>;
 
   if (!isLoggedIn) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <GuestPanel onLoginClick={() => setShowLogin(true)} />
+        {showLogin && (
+          <Login
+            asModal
+            onClose={() => setShowLogin(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        )}
+      </>
+    );
   }
+
+  const isUrzędnik = userRole === 'urzednik';
+  const isDyrektor = userRole === 'dyrektor';
+  const isMieszkaniec = userRole === 'mieszkaniec';
+  const technicalMode = isDyrektor || isUrzędnik;
+
+  const navButton = (page: Page, label: string) => (
+    <button
+      key={page}
+      className={`nav-btn ${currentPage === page ? 'active' : ''}`}
+      onClick={() => setCurrentPage(page)}
+      aria-current={currentPage === page ? 'page' : undefined}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="App">
@@ -47,32 +91,16 @@ function App() {
         <div className="navbar-container">
           <h1 className="navbar-title">
             EnergyCity
-            <span className="navbar-role" aria-label={`Zalogowany jako: ${userRole}`}>
-              ({userRole})
+            <span className="navbar-role" aria-label={`Zalogowany jako: ${getRoleLabel(userRole)}`}>
+              ({getRoleLabel(userRole)})
             </span>
           </h1>
           <div className="navbar-menu">
-            <button
-              className={`nav-btn ${currentPage === 'consumption' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('consumption')}
-              aria-current={currentPage === 'consumption' ? 'page' : undefined}
-            >
-              📊 Monitor Zużycia
-            </button>
-            <button
-              className={`nav-btn ${currentPage === 'oze' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('oze')}
-              aria-current={currentPage === 'oze' ? 'page' : undefined}
-            >
-              ☀️ Dashboard OZE
-            </button>
-            <button
-              className={`nav-btn ${currentPage === 'esg' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('esg')}
-              aria-current={currentPage === 'esg' ? 'page' : undefined}
-            >
-              📊 Raporty ESG
-            </button>
+            {(isDyrektor || isMieszkaniec) && navButton('my-buildings', '🏢 Moje budynki')}
+            {(isUrzędnik || isDyrektor) && navButton('consumption', '📊 Monitor Zużycia')}
+            {(isUrzędnik || isDyrektor) && navButton('oze', '☀️ Dashboard OZE')}
+            {(isUrzędnik || isDyrektor || isMieszkaniec) && navButton('esg', '📊 Raporty ESG')}
+            {isUrzędnik && navButton('users', '👥 Użytkownicy')}
             <button className="nav-btn btn-logout" onClick={handleLogout} aria-label="Wyloguj się">
               🚪 Wyloguj
             </button>
@@ -81,14 +109,21 @@ function App() {
       </nav>
 
       <main className="main-content" role="main">
-        {currentPage === 'consumption' && <ConsumptionMonitor userRole={userRole} />}
-        {currentPage === 'oze' && <OZEDashboard userRole={userRole} />}
+        {currentPage === 'my-buildings' && isDyrektor && <MyBuildingsDirector />}
+        {currentPage === 'my-buildings' && isMieszkaniec && <MyBuildingsResident />}
+        {currentPage === 'consumption' && (isUrzędnik || isDyrektor) && (
+          <ConsumptionMonitor userRole={userRole} technicalMode={technicalMode} />
+        )}
+        {currentPage === 'oze' && (isUrzędnik || isDyrektor) && (
+          <OZEDashboard userRole={userRole} />
+        )}
         {currentPage === 'esg' && <ESGReports userRole={userRole} />}
+        {currentPage === 'users' && isUrzędnik && <UserManagement />}
       </main>
 
       <footer className="app-footer" role="contentinfo">
         <p>
-          &copy; 2026 EnergyCity - System monitoringu energii i OZE. Dostępny dla roli: {userRole}
+          &copy; 2026 EnergyCity — {getRoleLabel(userRole)}
         </p>
       </footer>
     </div>

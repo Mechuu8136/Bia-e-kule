@@ -11,6 +11,7 @@ import './ConsumptionMonitor.css';
 
 interface ConsumptionMonitorProps {
   userRole: string;
+  technicalMode?: boolean;
 }
 
 const METER_SECTIONS: { type: MeterType; label: string; icon: string }[] = [
@@ -19,7 +20,10 @@ const METER_SECTIONS: { type: MeterType; label: string; icon: string }[] = [
   { type: MeterType.CIEPLO, label: 'Ciepło', icon: '🔥' },
 ];
 
-export const ConsumptionMonitor: React.FC<ConsumptionMonitorProps> = ({ userRole }) => {
+export const ConsumptionMonitor: React.FC<ConsumptionMonitorProps> = ({
+  userRole,
+  technicalMode = false,
+}) => {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('');
   const [meters, setMeters] = useState<Meter[]>([]);
@@ -90,7 +94,12 @@ export const ConsumptionMonitor: React.FC<ConsumptionMonitorProps> = ({ userRole
                 <span className="meter-serial">Nr seryjny: {meter.serial_number}</span>
                 <span className="meter-unit">Jednostka: {meter.unit}</span>
               </div>
-              <MeterChart meterId={meter.id} meterType={type} unit={meter.unit} />
+              <MeterChart
+                meterId={meter.id}
+                meterType={type}
+                unit={meter.unit}
+                detailedMode={technicalMode}
+              />
             </article>
           ))}
         </div>
@@ -109,8 +118,12 @@ export const ConsumptionMonitor: React.FC<ConsumptionMonitorProps> = ({ userRole
   return (
     <div className="consumption-monitor">
       <header className="monitor-header">
-        <h1>Monitor Zużycia</h1>
-        <p>Wizualizacja danych z liczników prądu, wody i ciepła</p>
+        <h1>{technicalMode ? 'Monitor Zużycia — widok techniczny' : 'Monitor Zużycia'}</h1>
+        <p>
+          {technicalMode
+            ? 'Szczegółowe odczyty liczników, numery seryjne i wykresy godzinowe do wykrywania anomalii'
+            : 'Wizualizacja danych z liczników prądu, wody i ciepła'}
+        </p>
         {userRole && (
           <p className="monitor-role-info">
             Zalogowano jako: <strong>{getRoleLabel(userRole)}</strong>
@@ -193,9 +206,36 @@ export const ConsumptionMonitor: React.FC<ConsumptionMonitorProps> = ({ userRole
                 <p>Brak liczników dla wybranego budynku</p>
               </div>
             ) : (
-              METER_SECTIONS.map(({ type, label, icon }) =>
-                renderMeterCharts(type, label, icon)
-              )
+              <>
+                {technicalMode && (
+                  <section className="meters-table-section" aria-labelledby="meters-table-heading">
+                    <h3 id="meters-table-heading">Rejestr liczników</h3>
+                    <table className="meters-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Nr seryjny</th>
+                          <th scope="col">Typ</th>
+                          <th scope="col">Jednostka</th>
+                          <th scope="col">ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {meters.map((meter) => (
+                          <tr key={meter.id}>
+                            <td><strong>{meter.serial_number}</strong></td>
+                            <td>{meter.type}</td>
+                            <td>{meter.unit}</td>
+                            <td className="meter-id-cell">{meter.id.slice(0, 8)}…</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                )}
+                {METER_SECTIONS.map(({ type, label, icon }) =>
+                  renderMeterCharts(type, label, icon)
+                )}
+              </>
             )}
           </div>
         </>

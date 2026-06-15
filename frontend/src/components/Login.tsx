@@ -4,9 +4,11 @@ import './Login.css';
 
 interface LoginProps {
   onLoginSuccess: (token: string, role: string) => void;
+  asModal?: boolean;
+  onClose?: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess, asModal = false, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +37,22 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>EnergyCity</h1>
-        <p>System monitoringu energii i OZE</p>
+  const formContent = (
+    <div className={`login-card ${asModal ? 'login-card-modal' : ''}`}>
+      {asModal && (
+        <button
+          type="button"
+          className="login-close-btn"
+          onClick={onClose}
+          aria-label="Zamknij okno logowania"
+        >
+          ✕
+        </button>
+      )}
+      <h1 id={asModal ? 'login-dialog-title' : undefined}>EnergyCity</h1>
+      <p>System monitoringu energii i OZE</p>
 
-        <form onSubmit={handleLogin} className="login-form">
+      <form onSubmit={handleLogin} className="login-form">
           {error && (
             <div className="error-message" role="alert" aria-live="polite">
               {error}
@@ -89,9 +100,28 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             Admin: admin@example.com / password
             <br />
             Dyrektor: dyrektor@example.com / password
+            <br />
+            Mieszkaniec: mieszkaniec@example.com / password
           </small>
         </p>
       </div>
-    </div>
   );
+
+  if (asModal) {
+    return (
+      <div
+        className="login-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-dialog-title"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose?.();
+        }}
+      >
+        <div className="login-container login-container-modal">{formContent}</div>
+      </div>
+    );
+  }
+
+  return <div className="login-container">{formContent}</div>;
 };

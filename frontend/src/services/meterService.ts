@@ -62,6 +62,11 @@ export const meterService = {
       params: { startDate, endDate },
     }),
 
+  aggregateReadingsByHour: (meterId: string, startDate: string, endDate: string) =>
+    apiClient.get<AggregatedData[]>(`/meter-readings/${meterId}/aggregate/hour`, {
+      params: { startDate, endDate },
+    }),
+
   getMeterStatistics: (meterId: string) =>
     apiClient.get<MeterStatistics>(`/meter-readings/${meterId}/statistics`),
 };

@@ -8,6 +8,8 @@ import { MetersModule } from './meters/meters.module';
 import { SolarModule } from './solar/solar.module';
 import { EsgModule } from './esg/esg.module';
 import { SeedModule } from './seed/seed.module';
+import { ResidentModule } from './resident/resident.module';
+import { PublicModule } from './public/public.module';
 import { User } from './users/user.entity';
 import { Building } from './buildings/building.entity';
 import { UserBuilding } from './users/user-building.entity';
@@ -16,6 +18,8 @@ import { MeterReading } from './meters/meter-reading.entity';
 import { SolarPanel } from './solar/solar-panel.entity';
 import { SolarProduction } from './solar/solar-production.entity';
 import { EsgReport } from './esg/esg-report.entity';
+import { Announcement } from './announcements/announcement.entity';
+import { AirQualityReading } from './air-quality/air-quality-reading.entity';
 
 @Module({
   imports: [
@@ -26,7 +30,7 @@ import { EsgReport } from './esg/esg-report.entity';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
-        entities: [User, Building, UserBuilding, Meter, MeterReading, SolarPanel, SolarProduction, EsgReport],
+        entities: [User, Building, UserBuilding, Meter, MeterReading, SolarPanel, SolarProduction, EsgReport, Announcement, AirQualityReading],
         synchronize: true,
         logging: true,
       }),
@@ -38,6 +42,8 @@ import { EsgReport } from './esg/esg-report.entity';
     SolarModule,
     EsgModule,
     SeedModule,
+    ResidentModule,
+    PublicModule,
   ],
 })
 export class AppModule { }

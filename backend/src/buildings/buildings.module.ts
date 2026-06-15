@@ -13,5 +13,6 @@ import { AuthModule } from '../auth/auth.module';
   ],
   providers: [BuildingsService],
   controllers: [BuildingsController],
+  exports: [BuildingsService],
 })
 export class BuildingsModule { }

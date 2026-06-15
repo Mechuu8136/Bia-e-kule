@@ -44,6 +44,20 @@ export class MeterReadingsController {
     );
   }
 
+  @Get(':meterId/aggregate/hour')
+  @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
+  async aggregateByHour(
+    @Param('meterId') meterId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<any> {
+    return this.readingsService.aggregateByHour(
+      meterId,
+      new Date(startDate),
+      new Date(endDate),
+    );
+  }
+
   @Get(':meterId/aggregate/month')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
   async aggregateByMonth(

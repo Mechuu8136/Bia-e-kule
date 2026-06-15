@@ -36,6 +36,7 @@ interface MeterChartProps {
   meterId: string;
   meterType: MeterType;
   unit: string;
+  detailedMode?: boolean;
 }
 
 const METER_LABELS: Record<MeterType, string> = {
@@ -50,12 +51,19 @@ const METER_COLORS: Record<MeterType, string> = {
   [MeterType.CIEPLO]: 'rgb(244, 67, 54)',
 };
 
-export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit }) => {
+export const MeterChart: React.FC<MeterChartProps> = ({
+  meterId,
+  meterType,
+  unit,
+  detailedMode = false,
+}) => {
   const [data, setData] = useState<AggregatedData[]>([]);
   const [statistics, setStatistics] = useState<MeterStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<'day' | 'month'>('month');
+  const [timeRange, setTimeRange] = useState<'hour' | 'day' | 'month'>(
+    detailedMode ? 'day' : 'month',
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,19 +72,26 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
         const endDate = new Date();
         const startDate = new Date();
 
-        if (timeRange === 'day') {
+        if (timeRange === 'hour') {
+          startDate.setDate(endDate.getDate() - 7);
+        } else if (timeRange === 'day') {
           startDate.setDate(endDate.getDate() - 30);
         } else {
           startDate.setFullYear(endDate.getFullYear() - 1);
         }
 
-        const start = startDate.toISOString().split('T')[0];
-        const end = endDate.toISOString().split('T')[0];
+        const start = startDate.toISOString();
+        const end = endDate.toISOString();
+
+        const chartRequest =
+          timeRange === 'hour'
+            ? meterService.aggregateReadingsByHour(meterId, start, end)
+            : timeRange === 'day'
+              ? meterService.aggregateReadingsByDay(meterId, start.split('T')[0], end.split('T')[0])
+              : meterService.aggregateReadingsByMonth(meterId, start.split('T')[0], end.split('T')[0]);
 
         const [chartResponse, statsResponse] = await Promise.all([
-          timeRange === 'day'
-            ? meterService.aggregateReadingsByDay(meterId, start, end)
-            : meterService.aggregateReadingsByMonth(meterId, start, end),
+          chartRequest,
           meterService.getMeterStatistics(meterId),
         ]);
 
@@ -120,7 +135,8 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
 
   const color = METER_COLORS[meterType];
   const typeLabel = METER_LABELS[meterType];
-  const rangeLabel = timeRange === 'day' ? 'ostatnie 30 dni' : 'ostatni rok';
+  const rangeLabel =
+    timeRange === 'hour' ? 'ostatnie 7 dni (godzinowo)' : timeRange === 'day' ? 'ostatnie 30 dni' : 'ostatni rok';
 
   const chartData = {
     labels: data.map((d) => formatChartDate(d.date, timeRange)),
@@ -218,6 +234,16 @@ export const MeterChart: React.FC<MeterChartProps> = ({ meterId, meterType, unit
       )}
 
       <div className="meter-chart-controls" role="group" aria-label="Zakres czasu wykresu">
+        {detailedMode && (
+          <button
+            type="button"
+            className={`btn-range ${timeRange === 'hour' ? 'btn-active' : ''}`}
+            onClick={() => setTimeRange('hour')}
+            aria-pressed={timeRange === 'hour'}
+          >
+            Godzinowo
+          </button>
+        )}
         <button
           type="button"
           className={`btn-range ${timeRange === 'day' ? 'btn-active' : ''}`}

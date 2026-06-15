@@ -5,6 +5,7 @@ import { SolarProduction } from './solar-production.entity';
 import { SolarPanel } from './solar-panel.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
+import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 
 interface AggregatedProduction {
   date: string;
@@ -171,7 +172,7 @@ export class SolarProductionService {
 
     if (userRole === UserRole.DYREKTOR) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
 
       if (userBuildings.length === 0) {

@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { SolarPanel } from './solar-panel.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
+import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 
 @Injectable()
 export class SolarPanelsService {
@@ -34,7 +35,7 @@ export class SolarPanelsService {
   ): Promise<SolarPanel[]> {
     if (userRole === UserRole.DYREKTOR && userId) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
       const allowedIds = userBuildings.map((ub) => ub.building_id);
       if (!allowedIds.includes(buildingId)) {
@@ -63,7 +64,7 @@ export class SolarPanelsService {
 
     if (userRole === UserRole.DYREKTOR) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
 
       if (userBuildings.length === 0) {

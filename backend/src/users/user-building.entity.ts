@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Building } from '../buildings/building.entity';
+import { UserBuildingLinkType } from './user-building-link-type.enum';
 
 @Entity('user_buildings')
 export class UserBuilding {
@@ -29,6 +30,13 @@ export class UserBuilding {
   })
   @JoinColumn({ name: 'building_id' })
   building!: Building;
+
+  @Column({
+    type: 'enum',
+    enum: UserBuildingLinkType,
+    default: UserBuildingLinkType.ASSIGNED,
+  })
+  link_type!: UserBuildingLinkType;
 
   @CreateDateColumn()
   created_at!: Date;

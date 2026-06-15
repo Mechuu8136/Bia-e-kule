@@ -24,8 +24,13 @@ export const getAccessScopeMessage = (role: string, buildingCount: number): stri
   }
   if (role === 'dyrektor') {
     return buildingCount > 0
-      ? 'Widzisz dane tylko ze swojej przypisanej jednostki.'
+      ? 'Widzisz dane techniczne tylko z jednostek przypisanych przez urzędnika.'
       : 'Brak przypisanego budynku — skontaktuj się z urzędnikiem gminy.';
+  }
+  if (role === 'mieszkaniec') {
+    return buildingCount > 0
+      ? 'Przeglądasz ulubione budynki — widzisz ogólne trendy, bez szczegółów sprzętu.'
+      : 'Dodaj budynki do ulubionych, aby śledzić zużycie energii w gminie.';
   }
   return '';
 };

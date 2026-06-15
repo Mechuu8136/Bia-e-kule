@@ -32,12 +32,18 @@ Frontend będzie dostępny na: `http://localhost:3000`
 
 ## 4. Logowanie - Testowe Konta
 
-Po otwarciu aplikacji będzie strona logowania. Użyj jednego z poniższych kont:
+Po otwarciu aplikacji widoczny jest **panel publiczny gościa** (aktualności, jakość powietrza, raporty ESG).
+Kliknij **„Zaloguj się”** w prawym górnym rogu, aby przejść do panelu użytkownika.
 
 ### Administrator (Urzędnik)
 - Email: `admin@example.com`
 - Hasło: `password`
 - **Uprawnienia**: Widzi wszystko, może tworzyć liczniki, panele i raporty
+
+### Mieszkaniec
+- Email: `mieszkaniec@example.com`
+- Hasło: `password`
+- **Uprawnienia**: Wybiera ulubione budynki, widzi trendy miesięczne (bez liczników)
 
 ### Dyrektor Szkoły
 - Email: `dyrektor@example.com`
@@ -45,6 +51,13 @@ Po otwarciu aplikacji będzie strona logowania. Użyj jednego z poniższych kont
 - **Uprawnienia**: Widzi tylko swoje budynki
 
 ## 5. Funkcje do Przetestowania
+
+### 🌐 Panel gościa (bez logowania)
+- [ ] Otworzyć aplikację — widoczny panel publiczny
+- [ ] Przeczytać aktualności gminy
+- [ ] Sprawdzić jakość powietrza (PM2.5, PM10, wykres 7 dni)
+- [ ] Pobrać publiczny raport ESG (PDF)
+- [ ] Kliknąć „Zaloguj się” i zalogować się jako użytkownik
 
 ### 📊 Monitor Zużycia
 - [ ] Zmienić budynek w selektorze
@@ -62,24 +75,54 @@ Po otwarciu aplikacji będzie strona logowania. Użyj jednego z poniższych kont
 - [ ] (Jako admin) Kliknąć "+ Nowy raport" i dodać raport
 - [ ] Sprawdzić statystyki redukcji CO2
 
-## 6. Dodawanie Testowych Danych (Backend CLI)
+### 👥 Zarządzanie użytkownikami (tylko urzędnik)
+- [ ] Zalogować się jako `admin@example.com`
+- [ ] Otworzyć kartę "Użytkownicy" w nawigacji
+- [ ] Kliknąć "+ Nowy użytkownik" i utworzyć konto dyrektora
+- [ ] Przypisać dyrektorowi co najmniej jeden budynek
+- [ ] Edytować przypisanie budynków istniejącemu użytkownikowi
+- [ ] Wylogować się i zalogować nowym kontem — sprawdzić ograniczony widok budynków
 
-Aby dodać testowych użytkowników, liczniki, panele itd., wykonaj w backendzie:
+## 6. Dodawanie Testowych Danych
+
+Aby dodać testowych użytkowników, liczniki, panele itd.:
+
+- **Panel UI (zalecane):** zaloguj się jako urzędnik → zakładka **Użytkownicy**
+- **API:** użyj curl/Postman (przykłady poniżej)
+- **Auto-seed:** przy pierwszym uruchomieniu backend tworzy dane demo (buildings, liczniki, panele)
+
+### Przykład: Dodanie nowego użytkownika (API)
 
 ```bash
-# W folderze backend, uruchom seed script (jeśli istnieje)
-# lub wykonaj API calls za pomocą curl/Postman
-```
-
-### Przykład: Dodanie nowego użytkownika
-
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
+# Zaloguj się jako urzędnik i pobierz token
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "test@example.com",
-    "password": "password",
-    "role": "dyrektor"
+    "email": "admin@example.com",
+    "password": "password"
+  }'
+
+# Utwórz dyrektora z przypisaniem budynku
+curl -X POST http://localhost:5000/api/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "email": "dyrektor.szpital@example.com",
+    "password": "haslo123",
+    "role": "dyrektor",
+    "building_ids": ["BUILDING_ID"]
+  }'
+
+# Lista użytkowników (tylko urzędnik)
+curl http://localhost:5000/api/users \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Aktualizacja przypisania budynków
+curl -X PATCH http://localhost:5000/api/users/USER_ID/buildings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "building_ids": ["BUILDING_ID_1", "BUILDING_ID_2"]
   }'
 ```
 

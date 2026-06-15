@@ -8,10 +8,14 @@ import { MeterType } from '../meters/meter-type.enum';
 import { SolarProduction } from '../solar/solar-production.entity';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/user-role.enum';
+import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 import { MetersService } from '../meters/meters.service';
 import { SolarPanelsService } from '../solar/solar-panels.service';
 import { EsgReportsService } from '../esg/esg-reports.service';
 import { User } from '../users/user.entity';
+import { Announcement } from '../announcements/announcement.entity';
+import { AirQualityReading } from '../air-quality/air-quality-reading.entity';
+import { AnnouncementsService } from '../announcements/announcements.service';
 
 const SCHOOL_NAME = 'Szkoła Podstawowa nr 1';
 
@@ -26,14 +30,20 @@ export class DemoDataSeedService implements OnModuleInit {
     private readonly readingsRepository: Repository<MeterReading>,
     @InjectRepository(SolarProduction)
     private readonly productionRepository: Repository<SolarProduction>,
+    @InjectRepository(Announcement)
+    private readonly announcementsRepository: Repository<Announcement>,
+    @InjectRepository(AirQualityReading)
+    private readonly airQualityRepository: Repository<AirQualityReading>,
     private readonly usersService: UsersService,
     private readonly metersService: MetersService,
     private readonly solarPanelsService: SolarPanelsService,
     private readonly esgReportsService: EsgReportsService,
+    private readonly announcementsService: AnnouncementsService,
   ) {}
 
   async onModuleInit() {
     await this.seedUsers();
+    await this.ensurePublicPanelData();
 
     if ((await this.buildingsRepository.count()) > 0) {
       await this.ensureDyrektorAssignment();
@@ -49,6 +59,7 @@ export class DemoDataSeedService implements OnModuleInit {
     const testUsers = [
       { email: 'admin@example.com', password: 'password', role: UserRole.URZEDNIK },
       { email: 'dyrektor@example.com', password: 'password', role: UserRole.DYREKTOR },
+      { email: 'mieszkaniec@example.com', password: 'password', role: UserRole.MIESZKANIEC },
     ];
 
     for (const { email, password, role } of testUsers) {
@@ -59,14 +70,51 @@ export class DemoDataSeedService implements OnModuleInit {
     }
   }
 
+  private async ensurePublicPanelData() {
+    if ((await this.announcementsRepository.count()) === 0) {
+      await this.announcementsService.create(
+        'Program wymiany oświetlenia LED w szkołach',
+        'Gmina Choroszcz kontynuuje modernizację oświetlenia w placówkach oświatowych. Wymiana na lampy LED pozwoli obniżyć zużycie prądu nawet o 40%.',
+      );
+      await this.announcementsService.create(
+        'Nowe panele fotowoltaiczne na urzędzie gminy',
+        'Na dachu Urzędu Gminy uruchomiono instalację PV o mocy 15 kWp. Produkcja energii jest monitorowana w systemie EnergyCity.',
+      );
+      await this.announcementsService.create(
+        'Konkurs ekologiczny dla mieszkańców',
+        'Zapraszamy do udziału w konkursie „Eko-gmina” — pokaż, jak oszczędzasz energię w domu i wygraj tytuł Eko-mieszkańca roku.',
+      );
+    }
+
+    if ((await this.airQualityRepository.count()) === 0) {
+      const readings: AirQualityReading[] = [];
+      for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
+        const timestamp = this.daysAgo(daysAgo);
+        readings.push(
+          this.airQualityRepository.create({
+            station_name: 'Stacja pomiarowa — centrum gminy',
+            pm25: Math.round((8 + Math.random() * 22) * 10) / 10,
+            pm10: Math.round((15 + Math.random() * 30) * 10) / 10,
+            timestamp,
+          }),
+        );
+      }
+      await this.airQualityRepository.save(readings);
+    }
+  }
+
   private async ensureDyrektorAssignment() {
     const dyrektor = await this.usersService.findByEmail('dyrektor@example.com');
     const school = await this.buildingsRepository.findOne({ where: { name: SCHOOL_NAME } });
     if (!dyrektor || !school) return;
 
-    const assigned = await this.usersService.getUserBuildings(dyrektor.id);
+    const assigned = await this.usersService.getAssignedBuildingIds(dyrektor.id);
     if (!assigned.includes(school.id)) {
-      await this.usersService.assignBuildingToUser(dyrektor.id, school.id);
+      await this.usersService.assignBuildingToUser(
+        dyrektor.id,
+        school.id,
+        UserBuildingLinkType.ASSIGNED,
+      );
     }
   }
 
@@ -92,7 +140,11 @@ export class DemoDataSeedService implements OnModuleInit {
 
     const dyrektor = await this.usersService.findByEmail('dyrektor@example.com');
     if (dyrektor) {
-      await this.usersService.assignBuildingToUser(dyrektor.id, school.id);
+      await this.usersService.assignBuildingToUser(
+        dyrektor.id,
+        school.id,
+        UserBuildingLinkType.ASSIGNED,
+      );
     }
 
     const schoolMeters = await Promise.all([
