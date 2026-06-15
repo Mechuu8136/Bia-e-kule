@@ -150,6 +150,44 @@
   font-family: monospace;
 }
 
+.meters-table-section {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.meters-table-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+}
+
+.meters-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.meters-table th,
+.meters-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.meters-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.meter-id-cell {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #666;
+}
+
 .error-banner {
   background: #ffebee;
   color: #c62828;

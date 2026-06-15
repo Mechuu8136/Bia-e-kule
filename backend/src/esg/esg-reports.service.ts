@@ -4,6 +4,7 @@ import { Repository, In, IsNull } from 'typeorm';
 import { EsgReport } from './esg-report.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
+import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 
 @Injectable()
 export class EsgReportsService {
@@ -44,13 +45,20 @@ export class EsgReportsService {
 
     if (userRole === UserRole.DYREKTOR) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
       return userBuildings.some((ub) => ub.building_id === buildingId);
     }
 
     if (userRole === UserRole.MIESZKANIEC) {
-      return true;
+      const favorite = await this.userBuildingsRepository.findOne({
+        where: {
+          user_id: userId,
+          building_id: buildingId,
+          link_type: UserBuildingLinkType.FAVORITE,
+        },
+      });
+      return !!favorite;
     }
 
     return false;
@@ -81,7 +89,7 @@ export class EsgReportsService {
 
     if (userRole === UserRole.DYREKTOR) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
 
       if (userBuildings.length === 0) {
@@ -100,7 +108,23 @@ export class EsgReportsService {
     }
 
     if (userRole === UserRole.MIESZKANIEC) {
-      return this.findGlobalReports();
+      const userBuildings = await this.userBuildingsRepository.find({
+        where: { user_id: userId, link_type: UserBuildingLinkType.FAVORITE },
+      });
+
+      if (userBuildings.length === 0) {
+        return this.findGlobalReports();
+      }
+
+      const buildingIds = userBuildings.map((ub) => ub.building_id);
+
+      return this.reportsRepository.find({
+        where: [
+          { building_id: In(buildingIds) },
+          { building_id: IsNull() },
+        ],
+        order: { created_at: 'DESC' },
+      });
     }
 
     return [];

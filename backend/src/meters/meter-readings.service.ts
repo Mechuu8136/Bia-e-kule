@@ -5,6 +5,7 @@ import { MeterReading } from './meter-reading.entity';
 import { Meter } from './meter.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
+import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 
 interface AggregatedData {
   date: string;
@@ -75,6 +76,37 @@ export class MeterReadingsService {
 
     readings.forEach((reading) => {
       const date = reading.timestamp.toISOString().split('T')[0];
+      if (!grouped.has(date)) {
+        grouped.set(date, []);
+      }
+      grouped.get(date)!.push(Number(reading.value));
+    });
+
+    return Array.from(grouped.entries()).map(([date, values]) => ({
+      date,
+      sum: values.reduce((a, b) => a + b, 0),
+      avg: values.reduce((a, b) => a + b, 0) / values.length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      count: values.length,
+    }));
+  }
+
+  async aggregateByHour(
+    meterId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<AggregatedData[]> {
+    const readings = await this.findReadingsByDateRange(
+      meterId,
+      startDate,
+      endDate,
+    );
+
+    const grouped = new Map<string, number[]>();
+
+    readings.forEach((reading) => {
+      const date = reading.timestamp.toISOString().slice(0, 13);
       if (!grouped.has(date)) {
         grouped.set(date, []);
       }
@@ -168,7 +200,7 @@ export class MeterReadingsService {
 
     if (userRole === UserRole.DYREKTOR) {
       const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId },
+        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
       });
 
       if (userBuildings.length === 0) {
