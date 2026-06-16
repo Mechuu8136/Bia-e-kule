@@ -18,6 +18,7 @@ import {
   PublicEsgStatistics,
 } from '../services/publicService';
 import { municipalityService } from '../services/municipalityService';
+import { resolveDocumentUrl } from '../services/api';
 import { formatNumber } from '../utils/chartFormatters';
 import './GuestPanel.css';
 
@@ -267,7 +268,7 @@ export const GuestPanel: React.FC<GuestPanelProps> = ({ onLoginClick }) => {
                         <strong>{formatNumber(Number(report.co2_reduction_kg), 0)} kg CO₂</strong>
                       </span>
                       {report.document_url ? (
-                        <a href={report.document_url} target="_blank" rel="noopener noreferrer">
+                        <a href={resolveDocumentUrl(report.document_url)} target="_blank" rel="noopener noreferrer">
                           Pobierz PDF
                         </a>
                       ) : (

@@ -1,10 +1,18 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
 import { SolarProductionService } from './solar-production.service';
 
+@ApiTags('Produkcja OZE')
+@ApiBearerAuth()
 @Controller('solar-production')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SolarProductionController {
@@ -12,60 +20,81 @@ export class SolarProductionController {
 
   @Get(':panelId')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async findByPanel(@Param('panelId') panelId: string) {
-    return this.productionService.findProductionByPanel(panelId);
+  @ApiOperation({ summary: 'Produkcja energii panelu PV' })
+  @ApiResponse({ status: 403, description: 'Brak dostępu do panelu' })
+  async findByPanel(@Param('panelId') panelId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    return this.productionService.findProductionByPanel(panelId, user.sub, user.role);
   }
 
   @Get(':panelId/range')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
+  @ApiOperation({ summary: 'Produkcja PV w zakresie dat' })
   async findByDateRange(
     @Param('panelId') panelId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Req() req: any,
   ) {
+    const user = req.user as { sub: string; role: UserRole };
     return this.productionService.findProductionByDateRange(
       panelId,
       new Date(startDate),
       new Date(endDate),
+      user.sub,
+      user.role,
     );
   }
 
   @Get(':panelId/aggregate/day')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
+  @ApiOperation({ summary: 'Agregacja dzienna produkcji PV' })
   async aggregateByDay(
     @Param('panelId') panelId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Req() req: any,
   ): Promise<any> {
+    const user = req.user as { sub: string; role: UserRole };
     return this.productionService.aggregateByDay(
       panelId,
       new Date(startDate),
       new Date(endDate),
+      user.sub,
+      user.role,
     );
   }
 
   @Get(':panelId/aggregate/month')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
+  @ApiOperation({ summary: 'Agregacja miesięczna produkcji PV' })
   async aggregateByMonth(
     @Param('panelId') panelId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Req() req: any,
   ): Promise<any> {
+    const user = req.user as { sub: string; role: UserRole };
     return this.productionService.aggregateByMonth(
       panelId,
       new Date(startDate),
       new Date(endDate),
+      user.sub,
+      user.role,
     );
   }
 
   @Get(':panelId/statistics')
   @Roles(UserRole.URZEDNIK, UserRole.DYREKTOR)
-  async getStatistics(@Param('panelId') panelId: string) {
-    return this.productionService.getStatistics(panelId);
+  @ApiOperation({ summary: 'Statystyki produkcji PV' })
+  async getStatistics(@Param('panelId') panelId: string, @Req() req: any) {
+    const user = req.user as { sub: string; role: UserRole };
+    return this.productionService.getStatistics(panelId, user.sub, user.role);
   }
 
   @Post(':panelId')
   @Roles(UserRole.URZEDNIK)
+  @ApiOperation({ summary: 'Dodaj odczyt produkcji PV' })
   async create(
     @Param('panelId') panelId: string,
     @Body()

@@ -7,6 +7,7 @@ import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 import { aggregateByTimeBucket } from '../database/aggregate-time-series';
+import { BuildingAccessService } from '../access/building-access.service';
 
 interface AggregatedData {
   date: string;
@@ -26,7 +27,16 @@ export class MeterReadingsService {
     private metersRepository: Repository<Meter>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    private readonly buildingAccess: BuildingAccessService,
   ) {}
+
+  private async ensureMeterAccess(
+    meterId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<void> {
+    await this.buildingAccess.assertMeterAccess(meterId, userId, userRole);
+  }
 
   async createReading(
     meterId: string,
@@ -41,7 +51,12 @@ export class MeterReadingsService {
     return this.readingsRepository.save(reading);
   }
 
-  async findReadingsByMeter(meterId: string): Promise<MeterReading[]> {
+  async findReadingsByMeter(
+    meterId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<MeterReading[]> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     return this.readingsRepository.find({
       where: { meter_id: meterId },
       order: { timestamp: 'ASC' },
@@ -52,7 +67,10 @@ export class MeterReadingsService {
     meterId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<MeterReading[]> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     return this.readingsRepository.find({
       where: {
         meter_id: meterId,
@@ -66,7 +84,10 @@ export class MeterReadingsService {
     meterId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<AggregatedData[]> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     return aggregateByTimeBucket(this.readingsRepository, {
       alias: 'reading',
       foreignKeyColumn: 'meter_id',
@@ -82,7 +103,10 @@ export class MeterReadingsService {
     meterId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<AggregatedData[]> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     return aggregateByTimeBucket(this.readingsRepository, {
       alias: 'reading',
       foreignKeyColumn: 'meter_id',
@@ -98,7 +122,10 @@ export class MeterReadingsService {
     meterId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<AggregatedData[]> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     return aggregateByTimeBucket(this.readingsRepository, {
       alias: 'reading',
       foreignKeyColumn: 'meter_id',
@@ -110,13 +137,18 @@ export class MeterReadingsService {
     });
   }
 
-  async getStatistics(meterId: string): Promise<{
+  async getStatistics(
+    meterId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<{
     totalReadings: number;
     minValue: number;
     maxValue: number;
     avgValue: number;
     latestReading: MeterReading | null;
   }> {
+    await this.ensureMeterAccess(meterId, userId, userRole);
     const stats = await this.readingsRepository
       .createQueryBuilder('reading')
       .select('COUNT(*)', 'totalReadings')

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { esgService, EsgReport, EsgStatistics } from '../services/esgService';
+import { resolveDocumentUrl, downloadReportFile } from '../services/api';
 import { buildingService, Building } from '../services/buildingService';
 import {
   getAccessScopeMessage,
@@ -26,6 +27,7 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'building' | 'global'>('building');
   const [showForm, setShowForm] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [formData, setFormData] = useState({
     co2_reduction_kg: '',
     document_url: '',
@@ -102,6 +104,30 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
       ]);
       setReports(reportsRes.data);
       if (statsRes) setStatistics(statsRes.data);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!isUrzędnik) return;
+    if (activeTab === 'building' && !selectedBuildingId) return;
+
+    try {
+      setGenerating(true);
+      setError(null);
+      const end = new Date();
+      const start = new Date(end.getFullYear(), 0, 1);
+      await esgService.generateReport(
+        activeTab === 'building' ? selectedBuildingId : null,
+        start.toISOString(),
+        end.toISOString(),
+        activeTab === 'global' ? formData.is_public : false,
+      );
+      await refreshReports();
+    } catch (err) {
+      setError('Błąd przy automatycznym generowaniu raportu');
+      console.error(err);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -260,14 +286,24 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
           </div>
 
           {isUrzędnik && (
-            <button
-              type="button"
-              className="btn-create"
-              onClick={() => setShowForm(!showForm)}
-              aria-expanded={showForm}
-            >
-              {showForm ? 'Anuluj' : '+ Nowy raport'}
-            </button>
+            <div className="esg-actions">
+              <button
+                type="button"
+                className="btn-create"
+                onClick={handleGenerateReport}
+                disabled={generating || (activeTab === 'building' && !selectedBuildingId)}
+              >
+                {generating ? 'Generowanie…' : '⚡ Generuj raport (CO₂ + PDF)'}
+              </button>
+              <button
+                type="button"
+                className="btn-create btn-create-secondary"
+                onClick={() => setShowForm(!showForm)}
+                aria-expanded={showForm}
+              >
+                {showForm ? 'Anuluj ręczny' : '+ Ręczny wpis'}
+              </button>
+            </div>
           )}
 
           {showForm && isUrzędnik && (
@@ -389,14 +425,13 @@ export const ESGReports: React.FC<ESGReportsProps> = ({ userRole }) => {
                     </div>
                   </div>
                   {report.document_url && (
-                    <a
-                      href={report.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
                       className="report-link"
+                      onClick={() => downloadReportFile(report.document_url!)}
                     >
                       📄 Pobierz dokument raportu
-                    </a>
+                    </button>
                   )}
                 </article>
               ))

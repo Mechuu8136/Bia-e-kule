@@ -12,3 +12,6 @@ dist/
 
 # Logi
 *.log
+
+# Wygenerowane raporty ESG (PDF)
+uploads/

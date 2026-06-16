@@ -53,4 +53,17 @@ export const esgService = {
 
   getGlobalStatistics: () =>
     apiClient.get<EsgStatistics>('/esg-reports/global/statistics'),
+
+  generateReport: (
+    buildingId: string | null,
+    startDate: string,
+    endDate: string,
+    isPublic?: boolean,
+  ) =>
+    apiClient.post<EsgReport>('/esg-reports/generate', {
+      building_id: buildingId,
+      start_date: startDate,
+      end_date: endDate,
+      is_public: isPublic,
+    }),
 };

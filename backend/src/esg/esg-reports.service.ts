@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull } from 'typeorm';
 import { EsgReport } from './esg-report.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
+import { BuildingAccessService } from '../access/building-access.service';
+import { EsgReportGeneratorService } from './esg-report-generator.service';
 
 @Injectable()
 export class EsgReportsService {
@@ -13,6 +15,8 @@ export class EsgReportsService {
     private reportsRepository: Repository<EsgReport>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    private readonly buildingAccess: BuildingAccessService,
+    private readonly reportGenerator: EsgReportGeneratorService,
   ) {}
 
   async createReport(
@@ -31,6 +35,45 @@ export class EsgReportsService {
     return this.reportsRepository.save(report);
   }
 
+  async generateReport(
+    generatedById: string,
+    buildingId: string | null,
+    startDate: Date,
+    endDate: Date,
+    isPublic = false,
+  ): Promise<EsgReport> {
+    const breakdown = await this.reportGenerator.calculateCo2Reduction(
+      buildingId,
+      startDate,
+      endDate,
+    );
+
+    const report = await this.createReport(
+      generatedById,
+      buildingId,
+      breakdown.totalKg,
+      undefined,
+      isPublic,
+    );
+
+    const municipalityName = await this.reportGenerator.getMunicipalityName();
+    const buildingName = await this.reportGenerator.getBuildingName(buildingId);
+
+    await this.reportGenerator.generatePdf(
+      report.id,
+      breakdown,
+      buildingName,
+      municipalityName,
+    );
+
+    report.document_url = buildingId
+      ? `/api/esg-reports/${report.id}/download`
+      : isPublic
+        ? `/api/public/esg-reports/${report.id}/download`
+        : `/api/esg-reports/${report.id}/download`;
+    return this.reportsRepository.save(report);
+  }
+
   async findReportsByBuilding(buildingId: string): Promise<EsgReport[]> {
     return this.reportsRepository.find({
       where: { building_id: buildingId },
@@ -43,27 +86,19 @@ export class EsgReportsService {
     userId: string,
     userRole: UserRole,
   ): Promise<boolean> {
-    if (userRole === UserRole.URZEDNIK) return true;
+    return this.buildingAccess.hasBuildingAccess(
+      buildingId,
+      userId,
+      userRole,
+    );
+  }
 
-    if (userRole === UserRole.DYREKTOR) {
-      const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
-      });
-      return userBuildings.some((ub) => ub.building_id === buildingId);
-    }
-
-    if (userRole === UserRole.MIESZKANIEC) {
-      const favorite = await this.userBuildingsRepository.findOne({
-        where: {
-          user_id: userId,
-          building_id: buildingId,
-          link_type: UserBuildingLinkType.FAVORITE,
-        },
-      });
-      return !!favorite;
-    }
-
-    return false;
+  async assertReportAccess(
+    report: EsgReport,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<void> {
+    return this.buildingAccess.assertReportAccess(report, userId, userRole);
   }
 
   async findGlobalReports(): Promise<EsgReport[]> {
@@ -84,6 +119,19 @@ export class EsgReportsService {
     return this.reportsRepository.findOne({
       where: { id: reportId },
     });
+  }
+
+  async findReportByIdWithAccess(
+    reportId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<EsgReport> {
+    const report = await this.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundException('Raport nie został znaleziony');
+    }
+    await this.assertReportAccess(report, userId, userRole);
+    return report;
   }
 
   async findReportsWithAccess(
