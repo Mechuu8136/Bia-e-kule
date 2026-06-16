@@ -7,6 +7,7 @@ import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
 import { aggregateByTimeBucket } from '../database/aggregate-time-series';
+import { BuildingAccessService } from '../access/building-access.service';
 
 interface AggregatedProduction {
   date: string;
@@ -26,7 +27,16 @@ export class SolarProductionService {
     private panelsRepository: Repository<SolarPanel>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    private readonly buildingAccess: BuildingAccessService,
   ) {}
+
+  private async ensurePanelAccess(
+    panelId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<void> {
+    await this.buildingAccess.assertPanelAccess(panelId, userId, userRole);
+  }
 
   async createProduction(
     panelId: string,
@@ -41,7 +51,12 @@ export class SolarProductionService {
     return this.productionRepository.save(production);
   }
 
-  async findProductionByPanel(panelId: string): Promise<SolarProduction[]> {
+  async findProductionByPanel(
+    panelId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<SolarProduction[]> {
+    await this.ensurePanelAccess(panelId, userId, userRole);
     return this.productionRepository.find({
       where: { panel_id: panelId },
       order: { timestamp: 'ASC' },
@@ -52,7 +67,10 @@ export class SolarProductionService {
     panelId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<SolarProduction[]> {
+    await this.ensurePanelAccess(panelId, userId, userRole);
     return this.productionRepository.find({
       where: {
         panel_id: panelId,
@@ -79,7 +97,10 @@ export class SolarProductionService {
     panelId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<AggregatedProduction[]> {
+    await this.ensurePanelAccess(panelId, userId, userRole);
     const rows = await aggregateByTimeBucket(this.productionRepository, {
       alias: 'production',
       foreignKeyColumn: 'panel_id',
@@ -97,7 +118,10 @@ export class SolarProductionService {
     panelId: string,
     startDate: Date,
     endDate: Date,
+    userId: string,
+    userRole: UserRole,
   ): Promise<AggregatedProduction[]> {
+    await this.ensurePanelAccess(panelId, userId, userRole);
     const rows = await aggregateByTimeBucket(this.productionRepository, {
       alias: 'production',
       foreignKeyColumn: 'panel_id',
@@ -111,7 +135,11 @@ export class SolarProductionService {
     return this.mapAggregatedProduction(rows);
   }
 
-  async getStatistics(panelId: string): Promise<{
+  async getStatistics(
+    panelId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<{
     totalReadings: number;
     totalProduction: number;
     avgProduction: number;
@@ -119,6 +147,7 @@ export class SolarProductionService {
     minProduction: number;
     latestReading: SolarProduction | null;
   }> {
+    await this.ensurePanelAccess(panelId, userId, userRole);
     const stats = await this.productionRepository
       .createQueryBuilder('production')
       .select('COUNT(*)', 'totalReadings')

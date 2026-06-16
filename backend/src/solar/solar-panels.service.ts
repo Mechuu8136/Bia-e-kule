@@ -5,6 +5,7 @@ import { SolarPanel } from './solar-panel.entity';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
+import { BuildingAccessService } from '../access/building-access.service';
 
 @Injectable()
 export class SolarPanelsService {
@@ -13,6 +14,7 @@ export class SolarPanelsService {
     private panelsRepository: Repository<SolarPanel>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    private readonly buildingAccess: BuildingAccessService,
   ) {}
 
   async createPanel(
@@ -35,14 +37,12 @@ export class SolarPanelsService {
     userId?: string,
     userRole?: UserRole,
   ): Promise<SolarPanel[]> {
-    if (userRole === UserRole.DYREKTOR && userId) {
-      const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
-      });
-      const allowedIds = userBuildings.map((ub) => ub.building_id);
-      if (!allowedIds.includes(buildingId)) {
-        return [];
-      }
+    if (userId && userRole) {
+      await this.buildingAccess.assertBuildingAccess(
+        buildingId,
+        userId,
+        userRole,
+      );
     }
 
     return this.panelsRepository.find({
@@ -50,7 +50,15 @@ export class SolarPanelsService {
     });
   }
 
-  async findPanelById(panelId: string): Promise<SolarPanel | null> {
+  async findPanelById(
+    panelId: string,
+    userId?: string,
+    userRole?: UserRole,
+  ): Promise<SolarPanel | null> {
+    if (userId && userRole) {
+      return this.buildingAccess.assertPanelAccess(panelId, userId, userRole);
+    }
+
     return this.panelsRepository.findOne({
       where: { id: panelId },
     });

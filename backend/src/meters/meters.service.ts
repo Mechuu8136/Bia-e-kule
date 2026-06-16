@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Meter } from './meter.entity';
@@ -6,6 +6,7 @@ import { MeterType } from './meter-type.enum';
 import { UserBuilding } from '../users/user-building.entity';
 import { UserRole } from '../users/user-role.enum';
 import { UserBuildingLinkType } from '../users/user-building-link-type.enum';
+import { BuildingAccessService } from '../access/building-access.service';
 
 @Injectable()
 export class MetersService {
@@ -14,6 +15,7 @@ export class MetersService {
     private metersRepository: Repository<Meter>,
     @InjectRepository(UserBuilding)
     private userBuildingsRepository: Repository<UserBuilding>,
+    private readonly buildingAccess: BuildingAccessService,
   ) {}
 
   async createMeter(
@@ -36,14 +38,12 @@ export class MetersService {
     userId?: string,
     userRole?: UserRole,
   ): Promise<Meter[]> {
-    if (userRole === UserRole.DYREKTOR && userId) {
-      const userBuildings = await this.userBuildingsRepository.find({
-        where: { user_id: userId, link_type: UserBuildingLinkType.ASSIGNED },
-      });
-      const allowedIds = userBuildings.map((ub) => ub.building_id);
-      if (!allowedIds.includes(buildingId)) {
-        return [];
-      }
+    if (userId && userRole) {
+      await this.buildingAccess.assertBuildingAccess(
+        buildingId,
+        userId,
+        userRole,
+      );
     }
 
     return this.metersRepository.find({
@@ -51,7 +51,15 @@ export class MetersService {
     });
   }
 
-  async findMeterById(meterId: string): Promise<Meter | null> {
+  async findMeterById(
+    meterId: string,
+    userId?: string,
+    userRole?: UserRole,
+  ): Promise<Meter | null> {
+    if (userId && userRole) {
+      return this.buildingAccess.assertMeterAccess(meterId, userId, userRole);
+    }
+
     return this.metersRepository.findOne({
       where: { id: meterId },
     });

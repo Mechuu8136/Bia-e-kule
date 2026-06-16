@@ -7,13 +7,14 @@ import { SolarProductionService } from './solar-production.service';
 import { SolarPanelsController } from './solar-panels.controller';
 import { SolarProductionController } from './solar-production.controller';
 import { UserBuilding } from '../users/user-building.entity';
-
-import { AuthModule } from '../auth/auth.module'; 
+import { AuthModule } from '../auth/auth.module';
+import { AccessModule } from '../access/access.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SolarPanel, SolarProduction, UserBuilding]),
-    AuthModule
+    AuthModule,
+    AccessModule,
   ],
   providers: [SolarPanelsService, SolarProductionService],
   controllers: [SolarPanelsController, SolarProductionController],

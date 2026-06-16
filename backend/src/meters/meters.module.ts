@@ -7,14 +7,14 @@ import { MeterReadingsService } from './meter-readings.service';
 import { MetersController } from './meters.controller';
 import { MeterReadingsController } from './meter-readings.controller';
 import { UserBuilding } from '../users/user-building.entity';
-
-// 1. Importujemy AuthModule
-import { AuthModule } from '../auth/auth.module'; 
+import { AuthModule } from '../auth/auth.module';
+import { AccessModule } from '../access/access.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Meter, MeterReading, UserBuilding]),
-    AuthModule // 2. Dodajemy AuthModule do załadowania
+    AuthModule,
+    AccessModule,
   ],
   providers: [MetersService, MeterReadingsService],
   controllers: [MetersController, MeterReadingsController],

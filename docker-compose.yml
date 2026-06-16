@@ -28,6 +28,8 @@ services:
       PORT: 5000
       NODE_ENV: production
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+    volumes:
+      - esg_uploads:/app/uploads
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -47,3 +49,4 @@ services:
 
 volumes:
   pg_data:
+  esg_uploads:

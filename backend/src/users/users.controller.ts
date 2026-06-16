@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserBuildingsDto } from './dto/update-user-buildings.dto';
@@ -7,6 +8,8 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from './user-role.enum';
 
+@ApiTags('Użytkownicy')
+@ApiBearerAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
@@ -14,6 +17,7 @@ export class UsersController {
 
   @Get()
   @Roles(UserRole.URZEDNIK)
+  @ApiOperation({ summary: 'Lista użytkowników systemu' })
   findAll() {
     return this.usersService.findAll();
   }

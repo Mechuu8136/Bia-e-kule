@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ConsumptionMonitor } from './components/ConsumptionMonitor';
 import { OZEDashboard } from './components/OZEDashboard';
 import { ESGReports } from './components/ESGReports';
@@ -12,6 +12,8 @@ import { Login } from './components/Login';
 import { SetupWizard } from './components/SetupWizard';
 import { MunicipalitySettingsPanel } from './components/MunicipalitySettingsPanel';
 import { municipalityService } from './services/municipalityService';
+import { authService } from './services/authService';
+import { setUnauthorizedHandler } from './services/api';
 import { getRoleLabel } from './utils/roleLabels';
 import './App.css';
 
@@ -30,6 +32,20 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    setIsLoggedIn(false);
+    setUserRole('');
+    setShowLogin(false);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      handleLogout();
+    });
+  }, [handleLogout]);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -40,12 +56,18 @@ function App() {
       }
 
       const token = localStorage.getItem('token');
-      const role = localStorage.getItem('role');
       if (token) {
-        setIsLoggedIn(true);
-        if (role) {
-          setUserRole(role);
-          setCurrentPage(defaultPageForRole(role));
+        try {
+          const meRes = await authService.getMe();
+          setIsLoggedIn(true);
+          setUserRole(meRes.data.role);
+          localStorage.setItem('role', meRes.data.role);
+          setCurrentPage(defaultPageForRole(meRes.data.role));
+        } catch {
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          setIsLoggedIn(false);
+          setUserRole('');
         }
       }
       setLoading(false);
@@ -69,14 +91,6 @@ function App() {
     setIsLoggedIn(true);
     setUserRole(role);
     setCurrentPage(defaultPageForRole(role));
-    setShowLogin(false);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    setIsLoggedIn(false);
-    setUserRole('');
     setShowLogin(false);
   };
 
