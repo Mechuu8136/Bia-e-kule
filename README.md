@@ -78,17 +78,13 @@ Kontrola dostępu oparta na rolach (RBAC). Próba odczytu danych nieprzypisanego
 Dodatkowe tabele: ogłoszenia, jakość powietrza, klucze API, ustawienia gminy.
 
 ### Struktura repozytorium
-
-```
-backend/          API NestJS
-frontend/         Aplikacja React
-tools/
-  biskupice-simulator/   Symulator danych gminy (zalecany do testów)
-  data-simulator/        Starszy symulator (wymaga istniejących liczników)
-docker-compose.yml
-```
-
----
+.
+├── backend/                # API NestJS
+├── frontend/               # Aplikacja React
+├── tools/
+│   ├── biskupice-simulator/ # Symulator danych gminy (zalecany do testów)
+│   └── data-simulator/      # Starszy symulator (wymaga istniejących liczników)
+└── docker-compose.yml
 
 ## Wymagania systemowe
 
