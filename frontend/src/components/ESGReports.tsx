@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { esgService, EsgReport, EsgStatistics } from '../services/esgService';
-import { resolveDocumentUrl, downloadReportFile } from '../services/api';
+import { downloadReportFile } from '../services/api';
 import { buildingService, Building } from '../services/buildingService';
 import {
   getAccessScopeMessage,
