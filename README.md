@@ -85,7 +85,9 @@ Dodatkowe tabele: ogłoszenia, jakość powietrza, klucze API, ustawienia gminy.
 ├── frontend/                   # Aplikacja React (panel urzędnika, gościa, wykresy)
 ├── tools/biskupice-simulator/  # Symulator danych gminy do testów lokalnych
 ├── docker-compose.yml          # PostgreSQL, backend, frontend
-├── .env.example                # Zmienne środowiskowe (JWT, CORS, URL API)
+├── .env.example                # Docker Compose — skopiuj do .env
+├── backend/.env.example        # Backend lokalny (npm run start:dev)
+├── frontend/.env.example       # Frontend lokalny (npm start)
 └── README.md
 ```
 
@@ -93,17 +95,67 @@ Dodatkowe tabele: ogłoszenia, jakość powietrza, klucze API, ustawienia gminy.
 
 ## Wymagania systemowe
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (zalecane — pełny stack)
-- Node.js 20+ (tryb deweloperski bez kontenerów aplikacji)
-- npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — zalecane uruchomienie pełnego stacku
+- Node.js 20+ i npm — tylko tryb deweloperski lub symulator danych
 
-Opcjonalnie skopiuj `.env.example` do `.env` i ustaw `JWT_SECRET` przed uruchomieniem produkcyjnym.
+---
+
+## Konfiguracja środowiska
+
+Przed pierwszym uruchomieniem skopiuj pliki `.env.example` do `.env`. Pliki `.env` są ignorowane przez git i nie trafiają do release — odbiorca release tworzy je lokalnie na podstawie przykładów.
+
+### Docker Compose (zalecane)
+
+W katalogu głównym projektu:
+
+```bash
+cp .env.example .env          # Linux/macOS
+copy .env.example .env        # Windows
+```
+
+| Zmienna | Opis | Domyślnie |
+|---------|------|-----------|
+| `JWT_SECRET` | Klucz podpisywania tokenów JWT. **Zmień przed produkcją** (min. 32 losowe znaki). | `change-me-in-production-...` |
+| `REACT_APP_API_URL` | Adres API dla frontendu (wbudowywany przy `docker compose build`). | `http://localhost:5000/api` |
+| `CORS_ORIGINS` | Dozwolone originy przeglądarki, lista po przecinku. | `http://localhost:3000,...` |
+
+Po zmianie `REACT_APP_API_URL` przebuduj frontend: `docker compose up -d --build frontend_app`.
+
+Dane PostgreSQL w Dockerze (ustawione w `docker-compose.yml`, nie w `.env`):
+
+| Parametr | Wartość |
+|----------|---------|
+| Użytkownik | `admin` |
+| Hasło | `super_secret_password` |
+| Baza | `energycity_metrics` |
+| Port na hoście | `5435` |
+
+### Tryb deweloperski (backend i frontend poza Dockerem)
+
+**Backend** — skopiuj `backend/.env.example` do `backend/.env`:
+
+| Zmienna | Opis |
+|---------|------|
+| `DATABASE_URL` | Połączenie z PostgreSQL (`localhost:5435` gdy baza z Docker Compose) |
+| `JWT_SECRET` | Klucz JWT |
+| `PORT` | Port API (domyślnie `5000`) |
+| `NODE_ENV` | `development` |
+| `CORS_ORIGINS` | Originy frontendu dev server |
+
+**Frontend** — skopiuj `frontend/.env.example` do `frontend/.env`:
+
+| Zmienna | Opis |
+|---------|------|
+| `REACT_APP_API_URL` | Adres backendu (`http://localhost:5000/api`) |
+
+**Symulator danych** — opcjonalnie `tools/biskupice-simulator/.env.example` → `.env` (`API_URL`, `API_KEY`).
 
 ---
 
 ## Uruchomienie (Docker)
 
 ```bash
+cp .env.example .env    # pierwsze uruchomienie — ustaw JWT_SECRET
 docker compose up -d --build
 ```
 
@@ -142,9 +194,12 @@ Dane pomiarowe nie są seedowane automatycznie. Dostarcz je przez API integracyj
 
 ## Uruchomienie deweloperskie
 
-### 1. Baza danych
+### 1. Konfiguracja
 
 ```bash
+cp .env.example .env                    # opcjonalnie, jeśli używasz tylko postgres z Docker
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 docker compose up -d postgres_db
 ```
 
@@ -159,14 +214,6 @@ npm run start:dev
 ```
 
 Backend: http://localhost:5000 — migracje uruchamiane automatycznie przy starcie.
-
-Zmienne środowiskowe w `backend/.env`:
-
-```
-DATABASE_URL=postgres://admin:super_secret_password@localhost:5435/energycity_metrics
-JWT_SECRET=change-me-in-development
-PORT=5000
-```
 
 ### 3. Frontend
 
@@ -187,7 +234,11 @@ Zalecany symulator gminy Biskupice — działa na hoście, symuluje zewnętrzny 
 ```bash
 cd tools/biskupice-simulator
 npm install
+cp .env.example .env    # uzupełnij API_KEY po kreatorze konfiguracji
+npm run seed
 ```
+
+Alternatywnie ustaw zmienne w shellu:
 
 Windows (PowerShell):
 
@@ -250,13 +301,13 @@ Swagger UI: http://localhost:5000/api/docs
 
 **Backend nie startuje**
 - Sprawdź status kontenerów: `docker compose ps`
-- Zweryfikuj `DATABASE_URL`, `JWT_SECRET`, `PORT` w `backend/.env`
+- Zweryfikuj `backend/.env` (tryb dev) lub `.env` w katalogu głównym (Docker)
 - Upewnij się, że port 5000 jest wolny
 - Błąd migracji na starym schemacie: `docker compose down -v`, uruchom ponownie
 
 **Frontend nie łączy się z API**
 - Backend musi być dostępny pod http://localhost:5000
-- W trybie deweloperskim ustaw `REACT_APP_API_URL=http://localhost:5000/api`
+- Sprawdź `REACT_APP_API_URL` w `frontend/.env` (dev) lub `.env` + przebudowa obrazu (Docker)
 
 **Brak danych po konfiguracji**
 - Uruchom `tools/biskupice-simulator` (sekcja powyżej)
