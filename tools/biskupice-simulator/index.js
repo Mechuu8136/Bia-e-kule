@@ -6,9 +6,11 @@
  *
  * Wymaga: skonfigurowanej aplikacji EnergyCity + klucz API (z kreatora pierwszego uruchomienia).
  *
- *   API_URL=http://localhost:5000/api API_KEY=ec_... npm run seed
- *   API_URL=http://localhost:5000/api API_KEY=ec_... npm run sync
+ *   cp .env.example .env   # uzupełnij API_KEY
+ *   npm run seed
  */
+
+require('dotenv').config();
 
 const profile = require('./biskupice-profile');
 
